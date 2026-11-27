@@ -777,12 +777,23 @@ function makeMathQ(grade, topic) {
     const ans = add ? a + b : a - b;
     return { text: `${a} ${add?'+':'-'} ${b} = ?`, ...shuffleOpts(ans, [ans+1, Math.max(0,ans-1), ans+2]) };
   }
-  if (topic.includes('20 доторх') || topic.includes('100 доторх')) {
-    const lim = topic.includes('20') ? 20 : 99;
+  if (topic.includes('Тоо жиших')) {
+    const a = rndInt(1, 19), b = rndInt(1, 19);
+    const ans = a > b ? '>' : a < b ? '<' : '=';
+    return { text: `${a} [ ? ] ${b} (аль тэмдэг тохирох вэ?)`, ...shuffleOpts(ans, ['>','<','=','+'].filter(x=>x!==ans)) };
+  }
+  if (topic.includes('20 доторх') || topic.includes('100 доторх') || topic.includes('1000 доторх') || topic.includes('Олон оронтой')) {
+    const lim = topic.includes('20') ? 20 : topic.includes('100 ') ? 99 : topic.includes('1000') ? 999 : 9999;
     const add = Math.random() > .45;
     const a = rndInt(5, lim - 5), b = add ? rndInt(2, lim - a) : rndInt(2, a - 1);
     const ans = add ? a + b : a - b;
     return { text: `${a} ${add?'+':'-'} ${b} = ?`, ...shuffleOpts(ans, [ans+2, Math.max(1,ans-2), ans+10]) };
+  }
+  if (topic.includes('Урт ба цаг')) {
+    const h = rndInt(1, 5);
+    if (Math.random() > .5) return { text: `${h} цаг хэдэн минут вэ?`, ...shuffleOpts(`${h*60} мин`, [`${h*30} мин`, `${h*100} мин`, `${h*60+10} мин`]) };
+    const m = rndInt(2, 9);
+    return { text: `${m} метр хэдэн сантиметр вэ?`, ...shuffleOpts(`${m*100} см`, [`${m*10} см`, `${m*1000} см`, `${m*50} см`]) };
   }
   if (topic.includes('Хүрд') || topic.includes('Үржүүлэх')) {
     const a = rndInt(2, g <= 2 ? 5 : 9), b = rndInt(2, 9);
@@ -802,20 +813,57 @@ function makeMathQ(grade, topic) {
     const ans = 2 * (a + b);
     return { text: `Талууд нь ${a} см ба ${b} см тэгш өнцөгтийн периметр хэд вэ?`, ...shuffleOpts(`${ans} см`, [`${a+b} см`, `${a*b} см`, `${ans+2} см`]) };
   }
+  if (topic.includes('Аравтын бутархай')) {
+    const a = (rndInt(11, 89) / 10).toFixed(1), b = (rndInt(11, 49) / 10).toFixed(1);
+    const ans = (Number(a) + Number(b)).toFixed(1);
+    return { text: `${a} + ${b} = ?`, ...shuffleOpts(ans, [(Number(ans)+0.2).toFixed(1), (Number(ans)-0.2).toFixed(1), (Number(ans)+1).toFixed(1)]) };
+  }
   if (topic.includes('бутархай')) {
     const d = [2,4,5,10][rndInt(0,3)], n1 = rndInt(1, d-1), n2 = rndInt(1, d-n1);
     const ans = `${n1+n2}/${d}`;
     return { text: `${n1}/${d} + ${n2}/${d} = ?`, ...shuffleOpts(ans, [`${n1+n2}/${d*2}`, `${Math.max(1,n1+n2-1)}/${d}`, `${n1+n2+1}/${d}`]) };
+  }
+  if (topic.includes('Дундаж') || topic.includes('хөдөлгөөн')) {
+    if (Math.random() > .5) {
+      const v = rndInt(40, 80), t = rndInt(2, 5);
+      return { text: `Машин ${v} км/ц хурдтай ${t} цаг явав. Нийт хэдэн км зам туулсан бэ?`, ...shuffleOpts(`${v*t} км`, [`${v+t} км`, `${v*t+20} км`, `${v*(t-1)} км`]) };
+    }
+    const a = rndInt(4, 14), b = a + 2 * rndInt(1, 5);
+    const ans = (a + b) / 2;
+    return { text: `${a} ба ${b} тоонуудын арифметик дундаж хэд вэ?`, ...shuffleOpts(ans, [ans+1, ans-1, a+b]) };
+  }
+  if (topic.includes('сөрөг тоо')) {
+    const a = rndInt(-12, -2), b = rndInt(3, 15);
+    const ans = a + b;
+    return { text: `(${a}) + ${b} = ?`, ...shuffleOpts(ans, [ans+2, ans-2, -(a+b)]) };
   }
   if (topic.includes('Хувь')) {
     const pct = [10,20,25,50][rndInt(0,3)], base = rndInt(2, 12) * 20;
     const ans = (base * pct) / 100;
     return { text: `${base}-ийн ${pct}% нь хэд вэ?`, ...shuffleOpts(ans, [ans+5, Math.max(1,ans-5), ans*2]) };
   }
-  if (topic.includes('Шугаман тэгшитгэл')) {
+  if (topic.includes('Өнцөг') || topic.includes('Гурвалж')) {
+    const a = rndInt(30, 80), b = rndInt(30, 70);
+    const ans = 180 - a - b;
+    return { text: `Гурвалжны хоёр өнцөг ${a}° ба ${b}° бол гурав дахь өнцөг хэдэн градус вэ?`, ...shuffleOpts(`${ans}°`, [`${ans+10}°`, `${Math.max(10,ans-10)}°`, `${a+b}°`]) };
+  }
+  if (topic.includes('Рационал') || topic.includes('зэрэг')) {
+    const a = rndInt(2, 5), p = rndInt(2, 4);
+    const ans = Math.pow(a, p);
+    return { text: `${a}^${p} = ?`, ...shuffleOpts(ans, [a*p, ans+a, Math.max(1,ans-a)]) };
+  }
+  if (topic.includes('Шугаман тэгшитгэл') || topic.includes('Шугаман функц')) {
     const x = rndInt(2, 12), a = rndInt(2, 6), b = rndInt(1, 15);
     const c = a * x + b;
     return { text: `${a}x + ${b} = ${c} бол x = ?`, ...shuffleOpts(x, [x+1, x-1, x+2]) };
+  }
+  if (topic.includes('Олон гишүүнт')) {
+    const a = rndInt(2, 7), b = rndInt(1, 6);
+    return { text: `(${a}x + ${b}) + (${b}x - ${b}) = ?`, ...shuffleOpts(`${a+b}x`, [`${a+b}x + ${2*b}`, `${a-b}x`, `${a*b}x`]) };
+  }
+  if (topic.includes('Тэнцэтгэл биш')) {
+    const a = rndInt(2, 5), x = rndInt(3, 9), c = a * x;
+    return { text: `${a}x < ${c} тэнцэтгэл бишийн хамгийн их бүхэл шийд аль нь вэ?`, ...shuffleOpts(x-1, [x, x+1, x-2]) };
   }
   if (topic.includes('Квадрат язгуур')) {
     const x = rndInt(2, 15);
@@ -826,16 +874,99 @@ function makeMathQ(grade, topic) {
     const [a,b,c] = triples[rndInt(0, triples.length-1)];
     return { text: `Тэгш өнцөгт гурвалжны катетууд ${a} ба ${b} бол гипотенуз хэд вэ?`, ...shuffleOpts(c, [c+1, c-1, a+b]) };
   }
-  if (topic.includes('Квадрат тэгшитгэл')) {
+  if (topic.includes('Квадрат')) {
     const r1 = rndInt(1, 6), r2 = rndInt(2, 7);
     const b = r1 + r2, c = r1 * r2;
     return { text: `x² - ${b}x + ${c} = 0 тэгшитгэлийн язгууруудын нийлбэр хэд вэ?`, ...shuffleOpts(b, [c, -b, b+1]) };
   }
-  // General grade-scaled math
+  if (topic.includes('Тригонометр')) {
+    const qs = [
+      { text:'sin(30°) = ?', ans:'1/2', w:['√3/2','√2/2','1'] },
+      { text:'cos(60°) = ?', ans:'1/2', w:['√3/2','0','1'] },
+      { text:'sin²α + cos²α = ?', ans:'1', w:['0','2','sin(2α)'] },
+      { text:'tg(45°) = ?', ans:'1', w:['0','√3','1/2'] }
+    ];
+    const pick = qs[rndInt(0, qs.length-1)];
+    return { text: pick.text, ...shuffleOpts(pick.ans, pick.w) };
+  }
+  if (topic.includes('Магадлал') || topic.includes('Комбинаторик')) {
+    const n = rndInt(3, 6);
+    const fact = [1,1,2,6,24,120,720][n];
+    if (Math.random() > .5) return { text: `${n}! (${n} факториал) хэд вэ?`, ...shuffleOpts(fact, [fact+2, fact/2, n*n]) };
+    return { text: `Шоо хаяхад тэгш тоо буух магадлал хэд вэ?`, ...shuffleOpts('1/2', ['1/3','1/6','2/3']) };
+  }
+  if (topic.includes('Логарифм')) {
+    const p = rndInt(2, 5), val = Math.pow(2, p);
+    return { text: `log₂(${val}) = ?`, ...shuffleOpts(p, [p+1, p-1, val/2]) };
+  }
+  if (topic.includes('прогресс')) {
+    const a1 = rndInt(1, 5), d = rndInt(2, 6), n = rndInt(4, 7);
+    const ans = a1 + (n - 1) * d;
+    return { text: `Арифметик прогрессийн a₁=${a1}, d=${d} бол a${n} хэд вэ?`, ...shuffleOpts(ans, [ans+d, ans-d, a1*n]) };
+  }
+  if (topic.includes('Уламжлал') || topic.includes('Интеграл')) {
+    const n = rndInt(2, 6);
+    return { text: `(x^${n})' уламжлал аль нь вэ?`, ...shuffleOpts(`${n}x^${n-1}`, [`x^${n-1}`, `${n}x^${n}`, `${n-1}x^${n}`]) };
+  }
   const a = rndInt(2, 5 + g * 2), b = rndInt(2, 4 + g);
   const ans = a * b + g;
   return { text: `${a} × ${b} + ${g} = ?`, ...shuffleOpts(ans, [ans+2, ans-2, a+b+g]) };
 }
+
+const BY_TOPIC = {
+  'Эгшиг ба гийгүүлэгч': [
+    { q:'Монгол хэлэнд хэдэн үндсэн эгшиг байдаг вэ?', a:'7', w:['5','6','8'] },
+    { q:'Дараах үсгүүдээс аль нь эгшиг вэ?', a:'Ө', w:['Б','Т','М'] },
+    { q:'«Аав» гэдэг үгэнд ямар эгшиг орсон бэ?', a:'Урт эгшиг (аа)', w:['Богино эгшиг','Хос эгшиг','Гийгүүлэгч'] },
+    { q:'Аль нь зөөлний тэмдэг вэ?', a:'Ь', w:['Ъ','Й','Ы'] }
+  ],
+  'Үеэр таслах': [
+    { q:'«Сургууль» үгийг үеэр зөв тасалсан нь аль вэ?', a:'Сур-гууль', w:['Су-ргууль','Сург-ууль','С-ургууль'] },
+    { q:'«Алим» үгэнд хэдэн үе байгаа вэ?', a:'2 үе', w:['1 үе','3 үе','4 үе'] },
+    { q:'«Монгол» үгийг хэрхэн үеэр таслах вэ?', a:'Мон-гол', w:['Мо-нгол','Монг-ол','М-онгол'] }
+  ],
+  'Эсрэг утгатай үг': [
+    { q:'«Сайн» үгийн эсрэг утгатай үг аль нь вэ?', a:'Муу', w:['Өндөр','Цэвэр','Том'] },
+    { q:'«Өдөр» үгийн эсрэг утгатай үг аль нь вэ?', a:'Шөнө', w:['Өглөө','Орой','Нар'] },
+    { q:'«Хурдан» үгийн эсрэг утгатай үг аль нь вэ?', a:'Удаан', w:['Түргэн','Хүчтэй','Хөнгөн'] },
+    { q:'«Халуун» үгийн эсрэг утгатай үг аль нь вэ?', a:'Хүйтэн', w:['Дулаан','Сэрүүн','Чийглэг'] }
+  ],
+  'Тийн ялгал': [
+    { q:'Монгол хэлэнд нийт хэдэн тийн ялгал байдаг вэ?', a:'8', w:['6','7','9'] },
+    { q:'«Номын» гэдэг нь аль тийн ялгал вэ?', a:'Харьяалахын (-ын)', w:['Заахын','Өгөх оршихын','Гарахын'] },
+    { q:'«Сургуулиас» гэдэг нь аль тийн ялгал вэ?', a:'Гарахын (-аас)', w:['Үйлдэхийн','Хамтрахын','Чиглэхийн'] }
+  ],
+  'Хурд ба хөдөлгөөн': [
+    { q:'Хурдны СИ систем дэх үндсэн нэгж аль нь вэ?', a:'м/с', w:['кг','Ньютон','Жоуль'] },
+    { q:'Туулсан замыг олох томьёо аль нь вэ?', a:'s = v · t', w:['s = v / t','v = s · t','t = s · v'] },
+    { q:'72 км/ц хурд нь хэдэн м/с-тэй тэнцүү вэ?', a:'20 м/с', w:['10 м/с','36 м/с','72 м/с'] }
+  ],
+  'Нягт ба масс': [
+    { q:'Нягтыг ямар томьёогоор олох вэ?', a:'ρ = m / V', w:['ρ = m · V','ρ = V / m','ρ = F / S'] },
+    { q:'Цэвэр усны нягт ойролцоогоор хэд вэ?', a:'1000 кг/м³', w:['100 кг/м³','500 кг/м³','2500 кг/м³'] },
+    { q:'Массыг хэмжих үндсэн нэгж аль нь вэ?', a:'Килограмм (кг)', w:['Литр','Метр','Ньютон'] }
+  ],
+  'Даралт': [
+    { q:'Даралтын СИ нэгж аль нь вэ?', a:'Паскаль (Па)', w:['Ньютон','Жоуль','Ватт'] },
+    { q:'Хатуу биеийн даралтыг олох томьёо аль нь вэ?', a:'p = F / S', w:['p = F · S','p = m / V','p = A / t'] },
+    { q:'Хутганы ирийг хурцлах нь даралтыг яах вэ?', a:'Талбай багасч даралт ихэснэ', w:['Даралт багасна','Даралт өөрчлөгдөхгүй','Талбай ихэснэ'] }
+  ],
+  'Атом ба молекул': [
+    { q:'Бодисын химийн шинж чанарыг хадгалах хамгийн жижиг хэсэг юу вэ?', a:'Молекул', w:['Атом','Электрон','Протон'] },
+    { q:'Атомын цөмд ямар бөөмс оршдог вэ?', a:'Протон ба нейтрон', w:['Зөвхөн электрон','Электрон ба протон','Зөвхөн нейтрон'] },
+    { q:'Электрон ямар цэнэгтэй вэ?', a:'Сөрөг (-)', w:['Эерэг (+)','Саармаг (0)','Хувьсах'] }
+  ],
+  'Монголын эзэнт гүрэн': [
+    { q:'Их Монгол Улс хэдэн онд байгуулагдсан бэ?', a:'1206 он', w:['1162 он','1227 он','1271 он'] },
+    { q:'Чингис хааны жинхэнэ нэр хэн бэ?', a:'Тэмүжин', w:['Өгэдэй','Бат','Хубилай'] },
+    { q:'Юань гүрнийг үндэслэгч хэн бэ?', a:'Хубилай хаан', w:['Өгэдэй хаан','Мөнх хаан','Гүюг хаан'] }
+  ],
+  'Хоёртын тооллын систем': [
+    { q:'Хоёртын тооллын систем ямар цифрүүдээс бүрддэг вэ?', a:'0 ба 1', w:['0-ээс 9','1 ба 2','0, 1, 2'] },
+    { q:'Аравтын 5 тоо хоёртын системд ямар байх вэ?', a:'101', w:['110','100','111'] },
+    { q:'1 байт хэдэн битээс бүрдэх вэ?', a:'8 бит', w:['4 бит','16 бит','2 бит'] }
+  ]
+};
 
 const TOPIC_BANKS = {
   'Монгол хэл': [
@@ -941,21 +1072,19 @@ function generateAssignment() {
   if (sub === 'Математик') {
     for (let i = 0; i < qCount; i++) list.push(makeMathQ(grade, topic));
   } else {
-    const bank = TOPIC_BANKS[sub] || TOPIC_BANKS['Хүн ба орчин'];
-    const shuffled = [...bank].sort(() => Math.random() - 0.5);
+    const exact = (BY_TOPIC[topic] || []).slice().sort(() => Math.random() - 0.5);
+    const fallback = (TOPIC_BANKS[sub] || TOPIC_BANKS['Хүн ба орчин']).slice().sort(() => Math.random() - 0.5);
+    const combined = [...exact, ...fallback.filter(f => !exact.some(e => e.q === f.q))];
     for (let i = 0; i < qCount; i++) {
-      const item = shuffled[i % shuffled.length];
-      const prefix = i >= shuffled.length ? `(${topic}) ` : '';
-      list.push({ text: prefix + item.q, ...shuffleOpts(item.a, item.w) });
+      const item = combined[i % combined.length];
+      list.push({ text: item.q, ...shuffleOpts(item.a, item.w) });
     }
   }
 
   editQs = list;
-  if (!v('set-title')) {
-    ge('set-title').value = `${grade}-р анги · ${sub} — ${topic}`;
-  }
+  ge('set-title').value = `${grade}-р анги · ${sub} — ${topic}`;
   setQCount(qCount, true);
-  toast(`«${topic}» сэдвээр ${qCount} даалгавар бэлдлээ ✨`);
+  toast(`«${topic}» сэдвээр ${qCount} асуулт үүсгэлээ ✨`);
 }
 
 function setQCount(n, skipTrim) {
