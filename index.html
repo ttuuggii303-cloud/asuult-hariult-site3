@@ -468,12 +468,12 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
     </div>
     <label>Таны нэр (20 тэмдэгт)</label>
     <input id="s-name" placeholder="Нэрээ бич..." maxlength="20" oninput="updatePreview()" onkeydown="if(event.key==='Enter')studentJoin()">
-    <label>Хувцас өмсгөх</label>
+    <label>Биет / 3D Дүр сонгох</label>
+    <div class="outfit-grid" id="body-grid"></div>
+    <label>Хувцас өмсгөх (10 төрөл)</label>
     <div class="outfit-grid" id="out-grid"></div>
-    <label>Малгай / Толгойн гоёл</label>
+    <label>Малгай сонгох (10 төрөл)</label>
     <div class="outfit-grid" id="hat-grid"></div>
-    <label>Нэмэлт гоёл / Хэрэгсэл</label>
-    <div class="outfit-grid" id="prop-grid"></div>
     <label>Хүрээ сонгох</label>
     <div class="outfit-grid" id="frame-grid"></div>
     <label>Өнгө сонгох</label>
@@ -544,21 +544,29 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
 </div>
 
 <script>
-const AVATARS = ['🦁','🐯','🦊','🐺','🐻','🐼','🐨','🐸','🦋','🦄','🐬','🦅','🐉','🤖','👾','🐙','🦑','🐥','🦉','🦚','🐓','🕊️','🐇','🦝','🦨','🦡','🐧'];
+const BODIES = [
+  {id:'human',  icon:'🧑', label:'Хүн биет', head:'#ffffff', body:'#f1f5f9', stroke:'#cbd5e1', ear:null},
+  {id:'lion',   icon:'🦁', label:'3D Арслан', head:'#fcd34d', body:'#fbbf24', stroke:'#d97706', ear:'mane'},
+  {id:'tiger',  icon:'🐯', label:'3D Бар',    head:'#fdba74', body:'#fb923c', stroke:'#c2410c', ear:'round'},
+  {id:'panda',  icon:'🐼', label:'3D Панда',  head:'#ffffff', body:'#e2e8f0', stroke:'#334155', ear:'panda'},
+  {id:'fox',    icon:'🦊', label:'3D Үнэг',   head:'#fb923c', body:'#ea580c', stroke:'#9a3412', ear:'pointy'},
+  {id:'bunny',  icon:'🐰', label:'3D Туулай', head:'#fdf2f8', body:'#fce7f3', stroke:'#db2777', ear:'long'},
+  {id:'bear',   icon:'🐻', label:'3D Баавгай',head:'#d6a77a', body:'#b07d4f', stroke:'#78350f', ear:'round'},
+  {id:'cat',    icon:'🐱', label:'3D Муур',   head:'#fde68a', body:'#fcd34d', stroke:'#b45309', ear:'pointy'},
+  {id:'dog',    icon:'🐶', label:'3D Нохой',  head:'#e7c9a9', body:'#c89d72', stroke:'#7c4a21', ear:'floppy'},
+  {id:'frog',   icon:'🐸', label:'3D Мэлхий', head:'#86efac', body:'#4ade80', stroke:'#15803d', ear:'frog'}
+];
 const OUTFITS = [
   {icon:'👕', label:'Футболка'},{icon:'🧥', label:'Хүрэм'},{icon:'👔', label:'Костюм'},
   {icon:'👗', label:'Даашинз'},{icon:'🥋', label:'Кимоно'},{icon:'🦺', label:'Хантааз'},
-  {icon:'🥼', label:'Халаад'},{icon:'🧣', label:'Ороолт'}
+  {icon:'🥼', label:'Халаад'},{icon:'🧣', label:'Ороолт'},{icon:'👘', label:'Үндэсний'},
+  {icon:'👚', label:'Цамц'}
 ];
 const HATS = [
   {icon:'👑', label:'Титэм'},{icon:'🎓', label:'Малгай'},{icon:'🎩', label:'Бүрх'},
   {icon:'🧢', label:'Кепк'},{icon:'🎀', label:'Тууз'},{icon:'🎧', label:'Чихэвч'},
-  {icon:'🌸', label:'Цэцэг'},{icon:'⭐', label:'Од'},{icon:'', label:'Хоосон'}
-];
-const PROPS = [
-  {icon:'🎒', label:'Цүнх'},{icon:'🕶️', label:'Шил'},{icon:'🪄', label:'Шидэт саваа'},
-  {icon:'🛡️', label:'Бамбай'},{icon:'🎸', label:'Гитар'},{icon:'🏆', label:'Цом'},
-  {icon:'🔥', label:'Дөл'},{icon:'', label:'Хоосон'}
+  {icon:'⛑️', label:'Дуулга'},{icon:'👒', label:'Нарны'},{icon:'🪖', label:'Цэрэг'},
+  {icon:'🌺', label:'Цэцэг'},{icon:'', label:'Хоосон'}
 ];
 const FRAMES = [
   {id:'solid', label:'🟦 Энгийн'},
@@ -593,25 +601,63 @@ let editQs = [];
 
 // Student state
 let studentId = null;
-let myOutfit = OUTFITS[0].icon, myHat = HATS[0].icon, myProp = PROPS[0].icon, myFrame = FRAMES[0].id, myColor = COLORS[0];
+let myBody = BODIES[0].id, myOutfit = OUTFITS[0].icon, myHat = HATS[0].icon, myFrame = FRAMES[0].id, myColor = COLORS[0];
 let myOutfitLbl = OUTFITS[0].label;
 
-const WHITE_HUMAN_SVG = `<svg viewBox="0 0 64 64" class="human-svg" aria-hidden="true">
-  <circle cx="32" cy="19" r="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
-  <circle cx="28" cy="18" r="1.8" fill="#334155"/>
-  <circle cx="36" cy="18" r="1.8" fill="#334155"/>
-  <path d="M27.5 23 Q32 26.5 36.5 23" fill="none" stroke="#334155" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M16 56 C16 40 22 34 32 34 C42 34 48 40 48 56 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
-</svg>`;
+function renderBodySvg(bodyId) {
+  const b = BODIES.find(x => x.id === bodyId) || BODIES[0];
+  const gid = 'g_' + bodyId + '_' + Math.random().toString(36).slice(2,6);
+  let ears = '';
+  if (b.ear === 'mane') {
+    ears = `<circle cx="32" cy="20" r="15.5" fill="#b45309"/>`;
+  } else if (b.ear === 'round' || b.ear === 'panda') {
+    const ec = b.ear === 'panda' ? '#1e293b' : b.stroke;
+    ears = `<circle cx="21" cy="11" r="5" fill="${ec}"/><circle cx="43" cy="11" r="5" fill="${ec}"/>`;
+  } else if (b.ear === 'pointy') {
+    ears = `<polygon points="19,17 22,5 28,12" fill="${b.stroke}"/><polygon points="45,17 42,5 36,12" fill="${b.stroke}"/>`;
+  } else if (b.ear === 'long') {
+    ears = `<ellipse cx="25" cy="8" rx="3.8" ry="8" fill="${b.head}" stroke="${b.stroke}" stroke-width="1.5"/><ellipse cx="39" cy="8" rx="3.8" ry="8" fill="${b.head}" stroke="${b.stroke}" stroke-width="1.5"/>`;
+  } else if (b.ear === 'floppy') {
+    ears = `<ellipse cx="18" cy="21" rx="4" ry="7.5" fill="${b.stroke}"/><ellipse cx="46" cy="21" rx="4" ry="7.5" fill="${b.stroke}"/>`;
+  } else if (b.ear === 'frog') {
+    ears = `<circle cx="24" cy="11" r="4.5" fill="${b.head}" stroke="${b.stroke}" stroke-width="1.5"/><circle cx="40" cy="11" r="4.5" fill="${b.head}" stroke="${b.stroke}" stroke-width="1.5"/>`;
+  }
+  const pandaPatches = b.ear === 'panda'
+    ? `<ellipse cx="27" cy="19" rx="3.2" ry="2.5" fill="#1e293b"/><ellipse cx="37" cy="19" rx="3.2" ry="2.5" fill="#1e293b"/>`
+    : '';
+  return `<svg viewBox="0 0 64 64" class="human-svg" aria-hidden="true">
+    <defs>
+      <radialGradient id="${gid}h" cx="35%" cy="30%" r="68%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+        <stop offset="45%" stop-color="${b.head}"/>
+        <stop offset="100%" stop-color="${b.stroke}" stop-opacity="0.85"/>
+      </radialGradient>
+      <radialGradient id="${gid}b" cx="35%" cy="25%" r="75%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7"/>
+        <stop offset="50%" stop-color="${b.body}"/>
+        <stop offset="100%" stop-color="${b.stroke}" stop-opacity="0.9"/>
+      </radialGradient>
+    </defs>
+    ${ears}
+    <path d="M16 57 C16 40 22 34 32 34 C42 34 48 40 48 57 Z" fill="url(#${gid}b)" stroke="${b.stroke}" stroke-width="1.5"/>
+    <circle cx="32" cy="20" r="12.5" fill="url(#${gid}h)" stroke="${b.stroke}" stroke-width="1.5"/>
+    <ellipse cx="27.5" cy="14" rx="4" ry="2" fill="#ffffff" opacity="0.55" transform="rotate(-20 27.5 14)"/>
+    ${pandaPatches}
+    <circle cx="27.5" cy="19" r="1.9" fill="${b.ear==='panda'?'#fff':'#1e293b'}"/>
+    <circle cx="36.5" cy="19" r="1.9" fill="${b.ear==='panda'?'#fff':'#1e293b'}"/>
+    <circle cx="24" cy="22" r="2" fill="#fda4af" opacity="0.6"/>
+    <circle cx="40" cy="22" r="2" fill="#fda4af" opacity="0.6"/>
+    <path d="M28 24 Q32 27.5 36 24" fill="none" stroke="#1e293b" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>`;
+}
 
 function renderWornChar(s, size='md') {
   const col = s.color || '#4255ff';
   const fr = s.frame || 'solid';
   return `<div class="worn-char wc-${size} frame-${fr}" style="border-color:${col};background:${col}1c">
     ${s.hat ? `<span class="wc-hat">${s.hat}</span>` : ''}
-    ${WHITE_HUMAN_SVG}
+    ${renderBodySvg(s.body || 'human')}
     ${s.outfit ? `<span class="wc-body">${s.outfit}</span>` : ''}
-    ${s.prop ? `<span class="wc-prop">${s.prop}</span>` : ''}
   </div>`;
 }
 let myScore = 0, sAnswered = false, sQStart = 0, currentQ = null;
@@ -1305,8 +1351,8 @@ function handleTeacherMsg(data) {
       sendToStudent(data.sid, { type: 'full', msg: 'Уралдаанд 40 хүн дүүрсэн байна!' });
       return;
     }
-    students[data.sid] = { id: data.sid, name: data.name, outfit: data.outfit, hat: data.hat||'', prop: data.prop||'', frame: data.frame||'solid', color: data.color, score: 0 };
-    const roster = Object.values(students).map(s => ({ name: s.name, outfit: s.outfit, hat: s.hat, prop: s.prop, frame: s.frame, color: s.color }));
+    students[data.sid] = { id: data.sid, name: data.name, body: data.body||'human', outfit: data.outfit, hat: data.hat||'', frame: data.frame||'solid', color: data.color, score: 0 };
+    const roster = Object.values(students).map(s => ({ name: s.name, body: s.body, outfit: s.outfit, hat: s.hat, frame: s.frame, color: s.color }));
     sendToStudent(data.sid, { type: 'joined', sid: data.sid, count: roster.length, players: roster });
     updateLobbyUI();
     broadcast({ type: 'count', count: roster.length, players: roster });
@@ -1464,7 +1510,7 @@ function nextQuestion() {
   clearInterval(timerIv);
   if (qIdx + 1 >= activeSet.count) {
     const ranked = Object.values(students)
-      .map(s => ({ id: s.id, name: s.name, outfit: s.outfit, hat: s.hat, prop: s.prop, frame: s.frame, color: s.color, score: s.score }))
+      .map(s => ({ id: s.id, name: s.name, body: s.body, outfit: s.outfit, hat: s.hat, frame: s.frame, color: s.color, score: s.score }))
       .sort((a,b) => b.score - a.score);
     broadcast({ type: 'finished', ranked });
     ge('t-final-lb').innerHTML = renderPodium(ranked) + renderLB(ranked, null);
@@ -1485,27 +1531,28 @@ function enterWithPin() {
 }
 
 function buildJoinView() {
+  ge('body-grid').innerHTML = BODIES.map((b,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickBody(this,'${b.id}')">${b.icon} ${b.label}</span>`).join('');
   ge('out-grid').innerHTML = OUTFITS.map((o,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickOut(this,'${o.icon}','${o.label}')">${o.icon} ${o.label}</span>`).join('');
   ge('hat-grid').innerHTML = HATS.map((h,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickHat(this,'${h.icon}')">${h.icon||'🚫'} ${h.label}</span>`).join('');
-  ge('prop-grid').innerHTML = PROPS.map((p,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickProp(this,'${p.icon}')">${p.icon||'🚫'} ${p.label}</span>`).join('');
   ge('frame-grid').innerHTML = FRAMES.map((f,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickFrame(this,'${f.id}')">${f.label}</span>`).join('');
   ge('col-grid').innerHTML = COLORS.map((c,i) => `<div class="col-opt ${i===0?'sel':''}" style="background:${c}" onclick="pickCol(this,'${c}')"></div>`).join('');
-  myOutfit = OUTFITS[0].icon; myOutfitLbl = OUTFITS[0].label;
-  myHat = HATS[0].icon; myProp = PROPS[0].icon; myFrame = FRAMES[0].id; myColor = COLORS[0];
+  myBody = BODIES[0].id; myOutfit = OUTFITS[0].icon; myOutfitLbl = OUTFITS[0].label;
+  myHat = HATS[0].icon; myFrame = FRAMES[0].id; myColor = COLORS[0];
   updatePreview();
 }
 
 function updatePreview() {
   const name = v('s-name') || 'Тоглогч';
-  ge('pv-char').innerHTML = renderWornChar({ outfit: myOutfit, hat: myHat, prop: myProp, frame: myFrame, color: myColor }, 'lg');
+  const bObj = BODIES.find(x => x.id === myBody) || BODIES[0];
+  ge('pv-char').innerHTML = renderWornChar({ body: myBody, outfit: myOutfit, hat: myHat, frame: myFrame, color: myColor }, 'lg');
   ge('pv-name').textContent = name;
   ge('pv-name').style.color = myColor;
-  ge('pv-out-lbl').textContent = `${myOutfitLbl} ${myHat} ${myProp}`.trim();
+  ge('pv-out-lbl').textContent = `${bObj.label} · ${myOutfitLbl} ${myHat}`.trim();
   ge('char-preview').style.borderColor = myColor;
 }
+function pickBody(el,b){ el.parentElement.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myBody=b; updatePreview(); }
 function pickOut(el,o,lbl){ el.parentElement.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myOutfit=o; myOutfitLbl=lbl; updatePreview(); }
 function pickHat(el,h){ el.parentElement.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myHat=h; updatePreview(); }
-function pickProp(el,p){ el.parentElement.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myProp=p; updatePreview(); }
 function pickFrame(el,f){ el.parentElement.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myFrame=f; updatePreview(); }
 function pickCol(el,c){ el.parentElement.querySelectorAll('.col-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myColor=c; updatePreview(); }
 
@@ -1522,7 +1569,7 @@ function studentJoin() {
   connectMqtt(0, cl => {
     cl.subscribe([`quizrace/${roomPin}/all`, `quizrace/${roomPin}/s/${studentId}`], () => {
       cl.publish(`quizrace/${roomPin}/host`, JSON.stringify({
-        type: 'join', sid: studentId, name, outfit: myOutfit, hat: myHat, prop: myProp, frame: myFrame, color: myColor
+        type: 'join', sid: studentId, name, body: myBody, outfit: myOutfit, hat: myHat, frame: myFrame, color: myColor
       }));
       joinTimeout = setTimeout(() => {
         err.textContent = 'Өрөө олдсонгүй эсвэл багш өрөөг нээгээгүй байна. PIN кодоо шалгана уу.';
@@ -1551,7 +1598,7 @@ function handleStudentMsg(data) {
     cleanupPeer();
   } else if (data.type === 'joined') {
     clearTimeout(joinTimeout);
-    ge('sw-avatar').innerHTML = renderWornChar({ outfit: myOutfit, hat: myHat, prop: myProp, frame: myFrame, color: myColor }, 'lg');
+    ge('sw-avatar').innerHTML = renderWornChar({ body: myBody, outfit: myOutfit, hat: myHat, frame: myFrame, color: myColor }, 'lg');
     ge('sw-name').textContent = v('s-name');
     ge('sw-cnt').textContent = `${data.count} суралцагч нэгдсэн`;
     if (data.players) ge('sw-players').innerHTML = renderProfileCards(data.players);
@@ -1640,7 +1687,7 @@ function submitStudentAns(ai) {
 function showStudentResults(ranked) {
   const idx = ranked.findIndex(x => x.id === studentId);
   const rank = idx >= 0 ? idx + 1 : ranked.length;
-  ge('sr-avatar').innerHTML = renderWornChar({ outfit: myOutfit, hat: myHat, prop: myProp, frame: myFrame, color: myColor }, 'lg');
+  ge('sr-avatar').innerHTML = renderWornChar({ body: myBody, outfit: myOutfit, hat: myHat, frame: myFrame, color: myColor }, 'lg');
   ge('sr-name').textContent = v('s-name');
   ge('sr-score').textContent = myScore;
   const rEl = ge('sr-rank');
