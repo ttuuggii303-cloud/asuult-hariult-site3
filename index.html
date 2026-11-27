@@ -192,6 +192,22 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
 .pod-3{border-color:#ffab91;background:linear-gradient(180deg,#fbe9e7,#fff)}
 
 /* ===== MISC ===== */
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.player-card{
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:10px 8px;border-radius:14px;background:var(--surface-alt);
+  border:2px solid var(--line);animation:popIn .2s ease;
+}
+.player-ava{
+  position:relative;width:48px;height:48px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.8rem;border:2px solid;margin-bottom:6px;
+}
+.player-out{
+  position:absolute;bottom:-5px;right:-6px;font-size:1rem;
+  background:#fff;border-radius:50%;padding:1px 3px;border:1px solid var(--line);line-height:1;
+}
+.player-name{font-size:.86rem;font-weight:800;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .s-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:99px;background:var(--surface-alt);border:2px solid;margin:4px;font-size:.88rem;font-weight:800}
 .qr-wrap{background:#fff;padding:14px;border-radius:14px;border:2px solid var(--line);display:inline-block;margin-bottom:10px}
 .qr-wrap canvas,#qr-box img{display:block}
@@ -434,12 +450,13 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
      STUDENT WAITING
 ══════════════════════════════════════════════════ -->
 <div id="v-swait" class="view" style="justify-content:center">
-  <div class="card center" style="max-width:420px">
+  <div class="card center" style="max-width:520px">
     <div id="sw-avatar" style="font-size:4.5rem;margin-bottom:8px">🦁👕</div>
     <h2 id="sw-name">Нэр</h2>
     <p class="muted">Багш эхлүүлэхийг хүлээж байна...</p>
-    <div style="margin-top:14px"><span id="sw-cnt" class="badge badge-purple">Холбогдсон</span></div>
-    <div style="font-size:2rem;margin-top:20px" class="pulse">⏳</div>
+    <div style="margin-top:14px;margin-bottom:14px"><span id="sw-cnt" class="badge badge-purple">Холбогдсон</span></div>
+    <div id="sw-players" class="player-grid" style="max-height:220px;overflow-y:auto;text-align:left"></div>
+    <div style="font-size:2rem;margin-top:18px" class="pulse">⏳</div>
   </div>
 </div>
 
@@ -1198,6 +1215,18 @@ function startLobby(setId) {
   });
 }
 
+function renderProfileCards(arr) {
+  return `<div class="player-grid">${arr.map(s => `
+    <div class="player-card" style="border-color:${s.color}">
+      <div class="player-ava" style="border-color:${s.color};background:${s.color}20">
+        <span>${s.avatar}</span>
+        <span class="player-out">${s.outfit||''}</span>
+      </div>
+      <div class="player-name" style="color:${s.color}">${esc(s.name)}</div>
+    </div>
+  `).join('')}</div>`;
+}
+
 function handleTeacherMsg(data) {
   if (data.type === 'join') {
     const cnt = Object.keys(students).length;
@@ -1206,9 +1235,10 @@ function handleTeacherMsg(data) {
       return;
     }
     students[data.sid] = { id: data.sid, name: data.name, avatar: data.avatar, outfit: data.outfit, color: data.color, score: 0 };
-    sendToStudent(data.sid, { type: 'joined', sid: data.sid, count: Object.keys(students).length });
+    const roster = Object.values(students).map(s => ({ name: s.name, avatar: s.avatar, outfit: s.outfit, color: s.color }));
+    sendToStudent(data.sid, { type: 'joined', sid: data.sid, count: roster.length, players: roster });
     updateLobbyUI();
-    broadcast({ type: 'count', count: Object.keys(students).length });
+    broadcast({ type: 'count', count: roster.length, players: roster });
   } else if (data.type === 'answer') {
     const st = students[data.sid];
     if (!st || data.qIndex !== qIdx || qAnswers[data.sid]) return;
@@ -1231,10 +1261,9 @@ function updateLobbyUI() {
   ge('s-count-badge').textContent = `${arr.length} / 40 суралцагч`;
   ge('start-btn').disabled = arr.length === 0;
   ge('start-hint').textContent = arr.length === 0 ? 'Дор хаяж 1 суралцагч орсны дараа эхлүүлнэ' : `${arr.length} суралцагч бэлэн!`;
-  ge('lobby-empty').style.display = arr.length ? 'none' : '';
-  ge('lobby-students').innerHTML = arr.map(s =>
-    `<div class="s-chip" style="border-color:${s.color};color:${s.color}">${s.avatar}${s.outfit} ${esc(s.name)}</div>`
-  ).join('');
+  ge('lobby-students').innerHTML = arr.length
+    ? renderProfileCards(arr)
+    : '<p class="muted">Суралцагч хүлээж байна...</p>';
 }
 
 function closeLobby() {
@@ -1443,9 +1472,11 @@ function handleStudentMsg(data) {
     ge('sw-avatar').textContent = myAvatar + myOutfit;
     ge('sw-name').textContent = v('s-name');
     ge('sw-cnt').textContent = `${data.count} суралцагч нэгдсэн`;
+    if (data.players) ge('sw-players').innerHTML = renderProfileCards(data.players);
     showView('v-swait');
   } else if (data.type === 'count') {
     ge('sw-cnt').textContent = `${data.count} суралцагч нэгдсэн`;
+    if (data.players) ge('sw-players').innerHTML = renderProfileCards(data.players);
   } else if (data.type === 'countdown') {
     runCountdown(`${data.qIndex+1}-р асуулт эхэллээ!`, () => {});
   } else if (data.type === 'question') {
