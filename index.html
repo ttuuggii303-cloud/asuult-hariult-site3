@@ -309,28 +309,29 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
 <!-- ══════════════════════════════════════════════════
      HOME
 ══════════════════════════════════════════════════ -->
-<div id="v-home" class="view active" style="justify-content:center">
+<div id="v-home" class="view" style="justify-content:center">
   <div class="card center" style="max-width:440px">
     <div style="font-size:3.5rem;margin-bottom:6px">🏆</div>
     <h1>Асуулт Уралдаан</h1>
-    <p class="muted" style="margin-bottom:20px">Сурагчид код эсвэл QR-аар шууд орно. Багш утасны дугаараараа нэвтэрнэ.</p>
+    <p class="muted" style="margin-bottom:20px">Код оруулж уралдаанд нэгдэх эсвэл багшаар асуулт бэлдэнэ үү.</p>
 
     <label style="text-align:left">Тоглоомын PIN код</label>
     <input id="join-pin" placeholder="6 оронтой код (ж.нь: 482910)" maxlength="6" inputmode="numeric" onkeydown="if(event.key==='Enter')enterWithPin()" style="text-align:center;font-size:1.3rem;letter-spacing:3px">
     <button class="btn btn-dark btn-full btn-lg" onclick="enterWithPin()">🎮 Нэгдэх</button>
 
     <div class="sep"></div>
-    <button class="btn btn-primary btn-full btn-lg" onclick="openTeacherPortal()">👩‍🏫 Багш: Нэвтрэх / Асуулт бэлдэх</button>
+    <button class="btn btn-primary btn-full btn-lg" onclick="openTeacherPortal()">👩‍🏫 Багш: Асуулт бэлдэх / Эхлүүлэх</button>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
      AUTH — Утасны дугаараар нэвтрэх / бүртгүүлэх
 ══════════════════════════════════════════════════ -->
-<div id="v-auth" class="view" style="justify-content:center">
+<div id="v-auth" class="view active" style="justify-content:center">
   <div class="card" style="max-width:420px">
-    <button class="btn btn-sm" style="margin-bottom:12px" onclick="showView('v-home')">← Буцах</button>
-    <h2 class="center">📱 Утасны дугаараар нэвтрэх</h2>
+    <div style="font-size:3rem;text-align:center;margin-bottom:4px">📱</div>
+    <h2 class="center">Нэвтрэх / Бүртгүүлэх</h2>
+    <p class="muted center" style="font-size:.88rem;margin-bottom:14px">Үргэлжлүүлэхийн тулд утасны дугаараараа нэвтэрнэ үү</p>
     <div class="tabs">
       <div class="tab active" id="tab-login" onclick="switchAuthTab('login')">Нэвтрэх</div>
       <div class="tab" id="tab-reg" onclick="switchAuthTab('reg')">Бүртгүүлэх</div>
@@ -749,6 +750,7 @@ let myScore = 0, sAnswered = false, sQStart = 0, currentQ = null;
 const USERS_KEY = 'quizrace-users-v1';
 const SESS_KEY  = 'quizrace-session-v1';
 let currentAccount = null;
+let pendingRoomPin = null;
 
 function getSetsKey() {
   return currentAccount ? `quizrace-sets-${currentAccount.phone}` : SETS_KEY;
@@ -776,11 +778,22 @@ function openTeacherPortal() {
   else openAuth('login');
 }
 function updateAuthUI() {
-  const isStu = Boolean(new URLSearchParams(location.search).get('room'));
-  ge('nav-user-pill').style.display = (!isStu && currentAccount) ? '' : 'none';
-  ge('nav-logout-btn').style.display = (!isStu && currentAccount) ? '' : 'none';
-  ge('nav-auth-btn').style.display = (!isStu && !currentAccount) ? '' : 'none';
+  ge('nav-user-pill').style.display = currentAccount ? '' : 'none';
+  ge('nav-logout-btn').style.display = currentAccount ? '' : 'none';
+  ge('nav-auth-btn').style.display = 'none';
   if (currentAccount) ge('nav-user-pill').textContent = `👤 ${currentAccount.name} (${currentAccount.phone})`;
+}
+function afterAuthSuccess() {
+  updateAuthUI();
+  if (pendingRoomPin) {
+    roomPin = pendingRoomPin;
+    pendingRoomPin = null;
+    buildJoinView();
+    if (ge('s-name') && currentAccount) { ge('s-name').value = currentAccount.name; updatePreview(); }
+    showView('v-sjoin');
+  } else {
+    showView('v-home');
+  }
 }
 function doPhoneRegister() {
   const name = v('r-name'), phone = v('r-phone').replace(/\D/g,''), pass = v('r-pass');
@@ -794,9 +807,8 @@ function doPhoneRegister() {
   saveUsers(users);
   currentAccount = { name, phone };
   localStorage.setItem(SESS_KEY, JSON.stringify(currentAccount));
-  updateAuthUI();
   toast('Амжилттай бүртгэгдлээ! 🎉');
-  openSets();
+  afterAuthSuccess();
 }
 function doPhoneLogin() {
   const phone = v('l-phone').replace(/\D/g,''), pass = v('l-pass');
@@ -807,16 +819,15 @@ function doPhoneLogin() {
   if (!u || u.pass !== pass) { err.textContent = 'Утасны дугаар эсвэл нууц үг буруу байна'; err.style.display='block'; return; }
   currentAccount = { name: u.name, phone: u.phone };
   localStorage.setItem(SESS_KEY, JSON.stringify(currentAccount));
-  updateAuthUI();
   toast(`Тавтай морил, ${u.name}! 👋`);
-  openSets();
+  afterAuthSuccess();
 }
 function doLogout() {
   cleanupPeer();
   currentAccount = null;
   localStorage.removeItem(SESS_KEY);
   updateAuthUI();
-  showView('v-home');
+  openAuth('login');
   toast('Системээс гарлаа');
 }
 
@@ -858,11 +869,18 @@ function init() {
   const p = new URLSearchParams(location.search);
   const rm = p.get('room');
   if (rm) {
+    if (!currentAccount) {
+      pendingRoomPin = rm;
+      openAuth('login');
+      return;
+    }
     roomPin = rm;
     buildJoinView();
+    if (ge('s-name')) { ge('s-name').value = currentAccount.name; updatePreview(); }
     showView('v-sjoin');
     return;
   }
+  if (!currentAccount) { openAuth('login'); return; }
   showView('v-home');
 }
 
@@ -874,6 +892,7 @@ function showView(id) {
 
 function goHome() {
   cleanupPeer();
+  if (!currentAccount) { openAuth('login'); return; }
   if (new URLSearchParams(location.search).get('room')) return;
   showView('v-home');
 }
