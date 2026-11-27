@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>QuizRace — Kahoot маягийн Асуулт Уралдаан</title>
-<!-- PeerJS (No Firebase / No Login needed) -->
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<!-- MQTT.js (No Firebase / No Login / Works on all 4G & WiFi networks) -->
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <!-- QR Code -->
 <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
 <style>
@@ -472,18 +472,19 @@ const SHAPES  = ['▲','◆','●','■'];
 const MEDALS  = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
 const SETS_KEY = 'quizrace-sets-v1';
 
-const PEER_CFG = {
-  config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
-};
+const BROKERS = [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt'
+];
 
-let peer = null;
+let mqClient = null;
 let roomPin = null;
-let hostConn = null;
-let students = {};      // teacher side: { sid: { id, name, avatar, outfit, color, score, conn } }
+let students = {};      // teacher side: { sid: { id, name, avatar, outfit, color, score } }
 let activeSet = null;
 let qIdx = -1;
 let qAnswers = {};      // { sid: { answer, correct, points } }
 let timerIv = null;
+let joinTimeout = null;
 
 // Editor state
 let editSetId = null;
@@ -550,8 +551,41 @@ function goHome() {
 
 function cleanupPeer() {
   clearInterval(timerIv); timerIv = null;
-  if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
-  students = {}; hostConn = null;
+  clearTimeout(joinTimeout); joinTimeout = null;
+  if (mqClient) { try { mqClient.end(true); } catch(e){} mqClient = null; }
+  students = {};
+}
+
+function connectMqtt(idx, onReady, onMsg, onFail) {
+  if (idx >= BROKERS.length) { if (onFail) onFail(); return; }
+  const cid = 'qr_' + Math.random().toString(36).slice(2,10);
+  const cl = mqtt.connect(BROKERS[idx], { clientId: cid, clean: true, connectTimeout: 5000, reconnectPeriod: 2000 });
+  let settled = false;
+  const fbTimer = setTimeout(() => {
+    if (!settled) {
+      settled = true;
+      try { cl.end(true); } catch(e){}
+      connectMqtt(idx + 1, onReady, onMsg, onFail);
+    }
+  }, 5500);
+  cl.on('connect', () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(fbTimer);
+    mqClient = cl;
+    onReady(cl);
+  });
+  cl.on('message', (topic, payload) => {
+    try { onMsg(topic, JSON.parse(payload.toString())); } catch(e){}
+  });
+  cl.on('error', () => {
+    if (!settled) {
+      settled = true;
+      clearTimeout(fbTimer);
+      try { cl.end(true); } catch(e){}
+      connectMqtt(idx + 1, onReady, onMsg, onFail);
+    }
+  });
 }
 
 function toast(msg, col='#26890c') {
@@ -640,11 +674,12 @@ function saveSet() {
   openSets();
 }
 
-/* ── TEACHER LOBBY (PeerJS + QR) ── */
+/* ── TEACHER LOBBY (MQTT + QR) ── */
 function startLobby(setId) {
   activeSet = loadSets().find(x => x.id === setId);
   if (!activeSet) return;
   cleanupPeer();
+  qIdx = -1;
 
   roomPin = String(Math.floor(100000 + Math.random() * 900000));
   ge('lobby-pin').textContent = roomPin;
@@ -654,34 +689,29 @@ function startLobby(setId) {
   new QRCode(ge('qr-box'), { text: url, width: 200, height: 200, colorDark: '#25076b', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
 
   updateLobbyUI();
+  ge('start-hint').textContent = 'Серверт холбогдож байна...';
   showView('v-lobby');
 
-  peer = new Peer('quizrace-' + roomPin, PEER_CFG);
-  peer.on('error', err => toast('Холболтын алдаа: ' + err.type, '#e21b3c'));
-  peer.on('connection', conn => {
-    conn.on('data', data => handleTeacherMsg(conn, data));
-    conn.on('close', () => {
-      const sid = conn._sid;
-      if (sid && students[sid] && qIdx === -1) {
-        delete students[sid];
-        updateLobbyUI();
-        broadcast({ type: 'count', count: Object.keys(students).length });
-      }
+  connectMqtt(0, cl => {
+    cl.subscribe(`quizrace/${roomPin}/host`, () => {
+      ge('start-hint').textContent = '🟢 Өрөө бэлэн! Суралцагч орсны дараа эхлүүлнэ';
     });
+  }, (topic, data) => {
+    handleTeacherMsg(data);
+  }, () => {
+    toast('Холболтын алдаа гарлаа. Интернэтээ шалгана уу.', '#e21b3c');
   });
 }
 
-function handleTeacherMsg(conn, data) {
+function handleTeacherMsg(data) {
   if (data.type === 'join') {
     const cnt = Object.keys(students).length;
     if (cnt >= 40) {
-      conn.send({ type: 'full', msg: 'Уралдаанд 40 хүн дүүрсэн байна!' });
+      sendToStudent(data.sid, { type: 'full', msg: 'Уралдаанд 40 хүн дүүрсэн байна!' });
       return;
     }
-    const sid = 'st' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-    conn._sid = sid;
-    students[sid] = { id: sid, name: data.name, avatar: data.avatar, outfit: data.outfit, color: data.color, score: 0, conn };
-    conn.send({ type: 'joined', sid, count: Object.keys(students).length });
+    students[data.sid] = { id: data.sid, name: data.name, avatar: data.avatar, outfit: data.outfit, color: data.color, score: 0 };
+    sendToStudent(data.sid, { type: 'joined', sid: data.sid, count: Object.keys(students).length });
     updateLobbyUI();
     broadcast({ type: 'count', count: Object.keys(students).length });
   } else if (data.type === 'answer') {
@@ -693,8 +723,12 @@ function handleTeacherMsg(conn, data) {
   }
 }
 
+function sendToStudent(sid, msg) {
+  if (mqClient && mqClient.connected) mqClient.publish(`quizrace/${roomPin}/s/${sid}`, JSON.stringify(msg));
+}
+
 function broadcast(msg) {
-  Object.values(students).forEach(s => { try { if (s.conn && s.conn.open) s.conn.send(msg); } catch(e){} });
+  if (mqClient && mqClient.connected) mqClient.publish(`quizrace/${roomPin}/all`, JSON.stringify(msg));
 }
 
 function updateLobbyUI() {
@@ -862,22 +896,26 @@ function studentJoin() {
   ge('sjoin-btn').disabled = true;
   ge('sjoin-btn').textContent = 'Холбогдож байна...';
 
-  peer = new Peer(PEER_CFG);
-  peer.on('open', () => {
-    hostConn = peer.connect('quizrace-' + roomPin, { reliable: true });
-    hostConn.on('open', () => {
-      hostConn.send({ type: 'join', name, avatar: myAvatar, outfit: myOutfit, color: myColor });
+  studentId = 'st' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  cleanupPeer();
+
+  connectMqtt(0, cl => {
+    cl.subscribe([`quizrace/${roomPin}/all`, `quizrace/${roomPin}/s/${studentId}`], () => {
+      cl.publish(`quizrace/${roomPin}/host`, JSON.stringify({
+        type: 'join', sid: studentId, name, avatar: myAvatar, outfit: myOutfit, color: myColor
+      }));
+      joinTimeout = setTimeout(() => {
+        err.textContent = 'Өрөө олдсонгүй эсвэл багш өрөөг нээгээгүй байна. PIN кодоо шалгана уу.';
+        err.style.display = 'block';
+        ge('sjoin-btn').disabled = false;
+        ge('sjoin-btn').textContent = '✅ Шууд нэгдэх';
+        cleanupPeer();
+      }, 6500);
     });
-    hostConn.on('data', handleStudentMsg);
-    hostConn.on('error', () => {
-      err.textContent = 'Өрөө олдсонгүй. PIN кодоо шалгана уу.';
-      err.style.display = 'block';
-      ge('sjoin-btn').disabled = false;
-      ge('sjoin-btn').textContent = '✅ Шууд нэгдэх';
-    });
-  });
-  peer.on('error', () => {
-    err.textContent = 'Өрөө олдсонгүй эсвэл багш гараагүй байна.';
+  }, (topic, data) => {
+    handleStudentMsg(data);
+  }, () => {
+    err.textContent = 'Сервертэй холбогдож чадсангүй. Интернэтээ шалгана уу.';
     err.style.display = 'block';
     ge('sjoin-btn').disabled = false;
     ge('sjoin-btn').textContent = '✅ Шууд нэгдэх';
@@ -886,11 +924,13 @@ function studentJoin() {
 
 function handleStudentMsg(data) {
   if (data.type === 'full') {
+    clearTimeout(joinTimeout);
     const err = ge('sjoin-err');
     err.textContent = data.msg; err.style.display = 'block';
     ge('sjoin-btn').disabled = false; ge('sjoin-btn').textContent = '✅ Шууд нэгдэх';
+    cleanupPeer();
   } else if (data.type === 'joined') {
-    studentId = data.sid;
+    clearTimeout(joinTimeout);
     ge('sw-avatar').textContent = myAvatar + myOutfit;
     ge('sw-name').textContent = v('s-name');
     ge('sw-cnt').textContent = `${data.count} суралцагч нэгдсэн`;
@@ -968,8 +1008,10 @@ function submitStudentAns(ai) {
   if (correct) myScore += pts;
   ge('sg-score').textContent = `${myScore} оноо`;
 
-  if (hostConn && hostConn.open) {
-    hostConn.send({ type: 'answer', sid: studentId, qIndex: qIdx, answer: ai, correct, points: pts });
+  if (mqClient && mqClient.connected) {
+    mqClient.publish(`quizrace/${roomPin}/host`, JSON.stringify({
+      type: 'answer', sid: studentId, qIndex: qIdx, answer: ai, correct, points: pts
+    }));
   }
 }
 
