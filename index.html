@@ -3,486 +3,281 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>QuizRace — Асуулт Уралдаан</title>
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<title>QuizRace — Kahoot маягийн Асуулт Уралдаан</title>
+<!-- PeerJS (No Firebase / No Login needed) -->
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <!-- QR Code -->
 <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
 <style>
-/* ===== QUIZLET-INSPIRED THEME ===== */
+/* ===== KAHOOT-INSPIRED THEME ===== */
 :root {
-  --bg: #f6f7fb;
+  --bg: #46178f;
+  --bg-dark: #25076b;
   --surface: #ffffff;
-  --surface-alt: #f0f2f8;
-  --text: #282e3e;
-  --muted: #586380;
-  --line: #edeff4;
-  --line-strong: #d9dde8;
-  --primary: #4255ff;
-  --primary-hover: #3142d6;
-  --primary-soft: #eef0ff;
-  --gold: #ffcd1f;
-  --success: #23b26d;
-  --success-soft: #e7f8ef;
-  --danger: #ff725b;
-  --danger-soft: #ffefec;
-  --warning: #ff9c1a;
-  --shadow: 0 2px 12px rgba(40, 46, 62, 0.06);
-  --shadow-lg: 0 8px 28px rgba(40, 46, 62, 0.09);
-}
-body.dark {
-  --bg: #0a092d;
-  --surface: #2e3856;
-  --surface-alt: #1f2640;
-  --text: #f6f7fb;
-  --muted: #a8b1cc;
-  --line: #3b466b;
-  --line-strong: #4e5b88;
-  --primary: #5b6eff;
-  --primary-hover: #4255ff;
-  --primary-soft: #262f5a;
-  --success-soft: #143d2b;
-  --danger-soft: #4a2120;
-  --shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.35);
+  --surface-alt: #f2f2f2;
+  --text: #333333;
+  --text-light: #ffffff;
+  --muted: #6e6e6e;
+  --line: #e0e0e0;
+  --k-red: #e21b3c;
+  --k-blue: #1368ce;
+  --k-yellow: #d89e00;
+  --k-green: #26890c;
+  --k-purple: #46178f;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.24);
 }
 
-/* ===== RESET ===== */
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;scroll-behavior:smooth}
 body{
-  background:var(--bg);
+  background:radial-gradient(circle at 20% 20%, #5c22b8 0%, #46178f 45%, #25076b 100%);
+  background-attachment:fixed;
   color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+  font-family:'Montserrat',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   min-height:100vh;
-  line-height:1.55;
-  transition:background .2s,color .2s;
+  line-height:1.5;
 }
 
-/* ===== TOP NAVBAR (Quizlet style) ===== */
-.navbar{
-  position:sticky;top:0;z-index:50;
-  background:var(--surface);
-  border-bottom:1px solid var(--line);
-  padding:10px 20px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  box-shadow:0 1px 4px rgba(40,46,62,.04);
+/* ===== TOPBAR ===== */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px;color:#fff;
 }
 .brand{
   display:flex;align-items:center;gap:10px;
-  font-size:1.2rem;font-weight:800;color:var(--primary);cursor:pointer;
-  letter-spacing:-.02em;
+  font-size:1.35rem;font-weight:900;cursor:pointer;letter-spacing:-.02em;
 }
-.brand-logo{
-  width:34px;height:34px;border-radius:10px;
-  background:var(--primary);color:#fff;
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.15rem;font-weight:900;
+.brand-badge{
+  background:#fff;color:var(--k-purple);width:36px;height:36px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.2rem;
+  box-shadow:0 3px 0 rgba(0,0,0,.2);
 }
-.nav-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
 /* ===== VIEWS ===== */
-.view{display:none;min-height:calc(100vh - 57px);padding:24px 16px 48px;flex-direction:column;align-items:center}
-.view.active{display:flex;animation:fadeIn .2s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-
-/* ===== TYPOGRAPHY ===== */
-h1{font-size:2.1rem;font-weight:800;margin-bottom:8px;letter-spacing:-.02em}
-h2{font-size:1.45rem;font-weight:800;margin-bottom:14px;letter-spacing:-.01em}
-h3{font-size:1.08rem;font-weight:700;margin-bottom:10px}
-.muted{color:var(--muted)}
-.center{text-align:center}
+.view{display:none;min-height:calc(100vh - 64px);padding:16px 16px 48px;flex-direction:column;align-items:center}
+.view.active{display:flex;animation:popIn .22s ease}
+@keyframes popIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
 
 /* ===== CARD ===== */
 .card{
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:24px;
-  width:100%;
-  max-width:480px;
-  margin-bottom:16px;
-  box-shadow:var(--shadow);
+  background:var(--surface);border-radius:16px;padding:24px;
+  width:100%;max-width:460px;margin-bottom:16px;box-shadow:var(--shadow);
 }
 .card.wide{max-width:900px}
 .card.full{max-width:100%;width:100%}
 
-/* ===== FORM ===== */
-label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
-input,textarea,select{
-  display:block;width:100%;
-  padding:11px 14px;margin-bottom:12px;
-  font:inherit;color:var(--text);background:var(--surface-alt);
-  border:2px solid transparent;border-radius:10px;font-size:.98rem;outline:none;
-  transition:border-color .15s,background .15s;
-}
-input:focus,textarea:focus,select:focus{
-  border-color:var(--primary);
-  background:var(--surface);
-}
-textarea{min-height:80px;resize:vertical}
-input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--primary);transform:scale(1.15);cursor:pointer}
+h1{font-size:2.1rem;font-weight:900;margin-bottom:8px;text-align:center}
+h2{font-size:1.45rem;font-weight:800;margin-bottom:12px}
+h3{font-size:1.08rem;font-weight:800;margin-bottom:10px}
+.muted{color:var(--muted)}
+.center{text-align:center}
 
-/* ===== BUTTONS ===== */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:10px 18px;border-radius:10px;border:1px solid var(--line-strong);
-  background:var(--surface);color:var(--text);font:inherit;font-weight:700;cursor:pointer;
-  transition:all .15s;font-size:.92rem;text-decoration:none;white-space:nowrap;
+/* ===== FORM ===== */
+label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;font-weight:800;text-transform:uppercase}
+input,textarea,select{
+  display:block;width:100%;padding:12px 14px;margin-bottom:12px;
+  font:inherit;color:var(--text);background:var(--surface-alt);
+  border:2px solid var(--line);border-radius:10px;font-size:1rem;font-weight:600;outline:none;
 }
-.btn:hover{background:var(--surface-alt);border-color:var(--primary)}
-.btn:active{transform:scale(.98)}
-.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
-.btn-primary:hover:not(:disabled){background:var(--primary-hover);border-color:var(--primary-hover)}
-.btn-success{background:var(--success);border-color:var(--success);color:#fff}
-.btn-success:hover:not(:disabled){filter:brightness(.93)}
-.btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
-.btn-danger:hover:not(:disabled){filter:brightness(.93)}
-.btn-warning{background:var(--gold);border-color:var(--gold);color:#282e3e}
-.btn-warning:hover:not(:disabled){filter:brightness(.95)}
-.btn-sm{padding:6px 12px;font-size:.82rem;border-radius:8px}
-.btn-lg{padding:13px 26px;font-size:1.05rem;border-radius:12px}
+input:focus,textarea:focus{border-color:var(--k-purple);background:#fff}
+input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);transform:scale(1.2);cursor:pointer}
+
+/* ===== KAHOOT 3D BUTTONS ===== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px 20px;border-radius:10px;border:none;
+  border-bottom:4px solid rgba(0,0,0,.25);
+  background:#ececec;color:#333;font:inherit;font-weight:800;cursor:pointer;
+  transition:transform .1s,filter .15s;font-size:.95rem;white-space:nowrap;
+}
+.btn:hover:not(:disabled){filter:brightness(1.06)}
+.btn:active:not(:disabled){transform:translateY(2px);border-bottom-width:2px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--k-purple);color:#fff}
+.btn-blue{background:var(--k-blue);color:#fff}
+.btn-green{background:var(--k-green);color:#fff}
+.btn-red{background:var(--k-red);color:#fff}
+.btn-yellow{background:var(--k-yellow);color:#fff}
+.btn-dark{background:#333;color:#fff}
+.btn-sm{padding:7px 13px;font-size:.84rem;border-bottom-width:3px}
+.btn-lg{padding:14px 26px;font-size:1.1rem}
 .btn-full{width:100%;margin-bottom:10px}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap}
 
-/* ===== TABS ===== */
-.tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--surface-alt);border-radius:10px;padding:4px}
-.tab{flex:1;padding:9px;text-align:center;border-radius:8px;cursor:pointer;font-weight:700;color:var(--muted);transition:all .15s;user-select:none}
-.tab.active{background:var(--surface);color:var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.08)}
-
 /* ===== BADGE ===== */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:99px;font-size:.8rem;font-weight:700}
-.badge-green{background:var(--success-soft);color:var(--success)}
-.badge-blue{background:var(--primary-soft);color:var(--primary)}
-.badge-red{background:var(--danger-soft);color:var(--danger)}
-.badge-gold{background:#fff7d6;color:#996c00}
-body.dark .badge-gold{background:#4a3b0c;color:#ffcd1f}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;font-size:.82rem;font-weight:800}
+.badge-purple{background:#efe7ff;color:var(--k-purple)}
+.badge-green{background:#e3f5df;color:var(--k-green)}
+.badge-blue{background:#e1efff;color:var(--k-blue)}
+.badge-gold{background:#fff3cd;color:#856404}
 
-/* ===== STUDY SET GRID (Quizlet Dashboard) ===== */
-.set-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
-.set-card{
-  background:var(--surface);border:1px solid var(--line);border-radius:14px;
-  padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;
-  transition:transform .15s,border-color .15s,box-shadow .15s;
+/* ===== KAHOOT ANSWER TILES ===== */
+.k-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;width:100%}
+.k-tile{
+  display:flex;align-items:center;gap:12px;padding:18px 16px;
+  border-radius:12px;border:none;border-bottom:5px solid rgba(0,0,0,.28);
+  color:#fff;font:inherit;font-size:1.05rem;font-weight:800;
+  cursor:pointer;text-align:left;min-height:82px;transition:transform .1s,opacity .2s;
 }
-.set-card:hover{transform:translateY(-2px);border-color:var(--primary);box-shadow:var(--shadow-lg)}
-.set-card-title{font-size:1.1rem;font-weight:800;margin-bottom:6px;color:var(--text)}
-.set-card-meta{font-size:.82rem;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.k-tile:active:not(:disabled){transform:translateY(2px)}
+.k-tile:disabled{cursor:default}
+.k-0{background:var(--k-red)}
+.k-1{background:var(--k-blue)}
+.k-2{background:var(--k-yellow)}
+.k-3{background:var(--k-green)}
+.k-shape{
+  width:34px;height:34px;border-radius:8px;background:rgba(0,0,0,.18);
+  display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;
+}
+.k-tile.dimmed{opacity:.35}
+.k-tile.correct-mark{box-shadow:0 0 0 4px #fff, 0 0 20px rgba(255,255,255,.7);transform:scale(1.02)}
+
+/* ===== 3-2-1 COUNTDOWN OVERLAY ===== */
+#cd-overlay{
+  position:fixed;inset:0;z-index:200;background:rgba(37,7,107,.95);
+  display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px;
+}
+#cd-overlay.show{display:flex}
+.cd-num{font-size:7rem;font-weight:900;line-height:1;animation:cdPop .8s infinite}
+@keyframes cdPop{0%{transform:scale(.6);opacity:.3}50%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:1}}
 
 /* ===== TIMER RING ===== */
 .timer-wrap{position:relative;display:inline-block}
 .timer-wrap svg{transform:rotate(-90deg);display:block}
-.t-track{stroke:var(--line);fill:none}
-.t-prog{fill:none;stroke-linecap:round;transition:stroke-dashoffset .15s linear,stroke .4s}
-.t-num{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  font-weight:800;line-height:1;
-}
+.t-track{stroke:#e5e5e5;fill:none}
+.t-prog{fill:none;stroke-linecap:round;transition:stroke-dashoffset .15s linear,stroke .3s}
+.t-num{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-weight:900;line-height:1}
 
-/* ===== ANSWER BUTTONS (Quizlet Live style) ===== */
-.ans-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
-.ans-btn{
-  padding:16px 14px;border-radius:14px;border:2px solid var(--line-strong);
-  font-size:.98rem;font-weight:700;cursor:pointer;transition:all .15s;
-  text-align:left;line-height:1.35;min-height:74px;background:var(--surface);color:var(--text);
-  display:flex;align-items:flex-start;gap:10px;box-shadow:var(--shadow);
-}
-.ans-btn span.lbl{
-  font-size:.95rem;font-weight:800;min-width:26px;height:26px;border-radius:7px;
-  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;
-}
-.ans-A span.lbl{background:#ff725b}
-.ans-B span.lbl{background:#4255ff}
-.ans-C span.lbl{background:#23b26d}
-.ans-D span.lbl{background:#ff9c1a}
-.ans-btn:hover:not(:disabled){border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
-.ans-btn:disabled{cursor:default;transform:none!important}
-.ans-btn.correct{background:var(--success)!important;border-color:var(--success)!important;color:#fff!important}
-.ans-btn.correct span.lbl{background:rgba(255,255,255,.25)!important}
-.ans-btn.wrong{background:var(--danger)!important;border-color:var(--danger)!important;color:#fff!important}
-.ans-btn.wrong span.lbl{background:rgba(255,255,255,.25)!important}
-.ans-btn.dimmed{opacity:.45}
-.ans-btn.teacher-correct{background:var(--success)!important;border-color:var(--success)!important;color:#fff!important}
-
-/* ===== LEADERBOARD ===== */
-.lb-row{
-  display:flex;align-items:center;gap:12px;padding:12px 16px;
-  border-radius:12px;background:var(--surface);border:1px solid var(--line);margin-bottom:8px;
-  box-shadow:0 1px 3px rgba(0,0,0,.03);
-}
-.lb-row.me{border:2px solid var(--primary);background:var(--primary-soft)}
-.lb-rank{font-size:1.4rem;width:36px;text-align:center;flex-shrink:0;font-weight:800}
-.lb-avatar{font-size:1.9rem;flex-shrink:0}
-.lb-info{flex:1;min-width:0}
-.lb-name{font-weight:800;font-size:.98rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lb-sub{color:var(--muted);font-size:.8rem}
-.lb-pts{font-size:1.35rem;font-weight:800;color:var(--primary);flex-shrink:0}
-
-/* ===== AVATAR / OUTFIT / COLOR PICKERS ===== */
-.avatar-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.av-opt{font-size:1.9rem;cursor:pointer;padding:6px 8px;border-radius:10px;border:2px solid transparent;background:var(--surface-alt);transition:all .15s;user-select:none}
-.av-opt:hover{border-color:var(--line-strong)}
-.av-opt.sel{border-color:var(--primary);background:var(--primary-soft)}
-.outfit-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
-.out-opt{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:10px;border:2px solid var(--line);background:var(--surface-alt);cursor:pointer;font-size:.86rem;font-weight:700;transition:all .15s;user-select:none}
-.out-opt:hover{border-color:var(--primary)}
-.out-opt.sel{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
-.color-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
-.col-opt{width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s}
-.col-opt.sel{border-color:var(--surface);transform:scale(1.2);box-shadow:0 0 0 2px var(--primary)}
+/* ===== PICKERS (Name, Avatar, Outfit, Color) ===== */
+.avatar-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.av-opt{font-size:1.85rem;cursor:pointer;padding:5px 7px;border-radius:10px;border:2px solid transparent;background:var(--surface-alt);user-select:none}
+.av-opt.sel{border-color:var(--k-purple);background:#efe7ff}
+.outfit-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.out-opt{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:10px;border:2px solid var(--line);background:var(--surface-alt);cursor:pointer;font-size:.84rem;font-weight:700;user-select:none}
+.out-opt.sel{border-color:var(--k-purple);background:#efe7ff;color:var(--k-purple)}
+.color-grid{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:14px}
+.col-opt{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent}
+.col-opt.sel{border-color:#fff;transform:scale(1.2);box-shadow:0 0 0 2px var(--k-purple)}
 
 .char-preview{
-  display:flex;align-items:center;gap:14px;
-  padding:14px 16px;border-radius:14px;background:var(--surface-alt);border:2px solid var(--line-strong);
-  margin-bottom:16px;transition:border-color .2s;
+  display:flex;align-items:center;gap:14px;padding:12px 14px;
+  border-radius:14px;background:var(--surface-alt);border:2px solid var(--line);margin-bottom:14px;
 }
-.char-badge{position:relative;display:inline-flex;align-items:center;justify-content:center;width:62px;height:62px;border-radius:16px;font-size:2.3rem;border:2px solid;flex-shrink:0}
-.char-outfit{position:absolute;bottom:-6px;right:-8px;font-size:1.3rem;background:var(--surface);border-radius:50%;padding:2px 4px;border:1px solid var(--line-strong);line-height:1}
+.char-badge{position:relative;display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;border-radius:14px;font-size:2.2rem;border:2px solid;flex-shrink:0}
+.char-outfit{position:absolute;bottom:-6px;right:-8px;font-size:1.25rem;background:#fff;border-radius:50%;padding:2px 4px;border:1px solid var(--line);line-height:1}
 
-/* ===== RACE TRACK ===== */
-.race-track{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:16px;box-shadow:var(--shadow)}
-.race-lane{position:relative;height:36px;background:var(--surface-alt);border-radius:99px;margin-bottom:8px;overflow:hidden;border:1px solid var(--line);display:flex;align-items:center;padding:0 12px}
+/* ===== RACE TRACK & LEADERBOARD ===== */
+.race-track{background:var(--surface);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
+.race-lane{position:relative;height:34px;background:var(--surface-alt);border-radius:99px;margin-bottom:7px;overflow:hidden;display:flex;align-items:center;padding:0 12px}
 .race-lane:last-child{margin-bottom:0}
-.race-fill{position:absolute;left:0;top:0;bottom:0;opacity:.2;border-radius:99px;transition:width .4s ease}
+.race-fill{position:absolute;left:0;top:0;bottom:0;opacity:.22;border-radius:99px;transition:width .4s ease}
 .race-runner{position:relative;z-index:1;display:flex;align-items:center;gap:6px;font-size:.88rem;font-weight:800;transition:margin-left .4s ease;white-space:nowrap}
-.race-score{margin-left:auto;position:relative;z-index:1;font-size:.84rem;font-weight:800;color:var(--primary)}
+.race-score{margin-left:auto;position:relative;z-index:1;font-size:.85rem;font-weight:900;color:var(--k-purple)}
 
-/* ===== PODIUM ===== */
-.podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:16px 0 22px;flex-wrap:wrap}
-.pod-col{flex:1;min-width:100px;max-width:160px;text-align:center;background:var(--surface-alt);border:2px solid var(--line);border-radius:14px;padding:14px 8px}
-.pod-1{border-color:#ffcd1f;background:linear-gradient(180deg,rgba(255,205,31,.2),var(--surface));transform:translateY(-8px)}
-.pod-2{border-color:#94a3b8;background:linear-gradient(180deg,rgba(148,163,184,.16),var(--surface))}
-.pod-3{border-color:#f97316;background:linear-gradient(180deg,rgba(249,115,22,.16),var(--surface))}
-
-/* ===== STUDENT CHIP ===== */
-.s-chip{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:6px 12px;border-radius:99px;
-  background:var(--surface-alt);border:1.5px solid;
-  margin:4px;font-size:.88rem;font-weight:700;
+.lb-row{
+  display:flex;align-items:center;gap:12px;padding:11px 14px;
+  border-radius:12px;background:var(--surface);border:1px solid var(--line);margin-bottom:8px;
 }
+.lb-row.me{border:2px solid var(--k-purple);background:#efe7ff}
+.lb-rank{font-size:1.35rem;width:34px;text-align:center;font-weight:900}
+.lb-avatar{font-size:1.85rem}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-pts{font-size:1.3rem;font-weight:900;color:var(--k-purple)}
 
-/* ===== PROGRESS BAR ===== */
-.prog-bar-wrap{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:8px;width:100%}
-.prog-bar{height:100%;background:var(--primary);border-radius:99px;transition:width .4s}
-
-/* ===== GAME HEADER ===== */
-.g-header{
-  width:100%;max-width:860px;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 18px;background:var(--surface);border:1px solid var(--line);
-  border-radius:14px;margin-bottom:16px;box-shadow:var(--shadow);
-  flex-wrap:wrap;gap:10px;
-}
-
-/* ===== Q BOX ===== */
-.q-box{
-  width:100%;max-width:860px;
-  background:var(--surface);border:1px solid var(--line);
-  border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:var(--shadow);
-}
-.q-text{font-size:1.35rem;font-weight:800;line-height:1.4;text-align:center;margin-bottom:6px}
-.q-label{color:var(--primary);font-weight:800;font-size:.88rem;margin-bottom:8px;text-align:center}
-
-/* ===== FEEDBACK BOX ===== */
-.feedback{text-align:center;padding:20px 14px}
-.feedback .ficon{font-size:4rem;display:block;margin-bottom:8px}
-.feedback .ftitle{font-size:1.6rem;font-weight:800;margin-bottom:4px}
-.feedback .fpts{font-size:2.4rem;font-weight:800;color:var(--primary);margin-bottom:6px}
-.feedback .fcorrect{color:var(--muted);font-size:.95rem}
-
-/* ===== LIVE STATS ===== */
-.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:860px;margin-bottom:16px}
-.stat-box{text-align:center;padding:14px 8px;background:var(--surface);border-radius:12px;border:1px solid var(--line);box-shadow:var(--shadow)}
-.stat-box .snum{font-size:2rem;font-weight:800}
-.stat-box .slbl{color:var(--muted);font-size:.8rem;margin-top:2px;font-weight:600}
-
-/* ===== SETUP STEPS ===== */
-.setup-ol{margin:14px 0;padding-left:20px}
-.setup-ol li{margin-bottom:8px;color:var(--muted);line-height:1.5}
-.setup-ol li strong{color:var(--text)}
-
-/* ===== TOAST ===== */
-#toast{
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-  padding:12px 22px;border-radius:12px;font-weight:700;z-index:9999;color:#fff;
-  opacity:0;transition:opacity .22s;pointer-events:none;white-space:nowrap;
-  font-size:.95rem;box-shadow:0 6px 24px rgba(0,0,0,.22);
-}
-#toast.show{opacity:1}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:14px 0 20px;flex-wrap:wrap}
+.pod-col{flex:1;min-width:98px;max-width:155px;text-align:center;background:var(--surface-alt);border:2px solid var(--line);border-radius:14px;padding:12px 8px}
+.pod-1{border-color:#ffd700;background:linear-gradient(180deg,#fff7cc,#fff);transform:translateY(-8px)}
+.pod-2{border-color:#b0bec5;background:linear-gradient(180deg,#eceff1,#fff)}
+.pod-3{border-color:#ffab91;background:linear-gradient(180deg,#fbe9e7,#fff)}
 
 /* ===== MISC ===== */
-.sep{border:none;border-top:1px solid var(--line);margin:18px 0}
-.hero-icon{font-size:4.2rem;text-align:center;display:block;margin-bottom:10px}
-.big-num{font-size:3.2rem;font-weight:800;color:var(--primary);line-height:1}
-.back-btn{align-self:flex-start;margin-bottom:14px}
-.qr-wrap{background:#fff;padding:14px;border-radius:14px;border:1px solid var(--line);display:inline-block;margin-bottom:10px}
+.s-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:99px;background:var(--surface-alt);border:2px solid;margin:4px;font-size:.88rem;font-weight:800}
+.qr-wrap{background:#fff;padding:14px;border-radius:14px;border:2px solid var(--line);display:inline-block;margin-bottom:10px}
 .qr-wrap canvas,#qr-box img{display:block}
+.g-header{width:100%;max-width:860px;background:#fff;border-radius:16px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;box-shadow:var(--shadow)}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:860px;margin-bottom:14px}
+.stat-box{text-align:center;padding:12px;background:#fff;border-radius:12px;box-shadow:var(--shadow)}
+.stat-box .snum{font-size:1.85rem;font-weight:900}
+.qe-card{background:#fff;border-radius:14px;padding:18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.opt-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.opt-row input[type=text],.opt-row input:not([type=radio]){margin:0;flex:1}
+.pin-box{font-size:2.3rem;font-weight:900;letter-spacing:4px;color:var(--k-purple);background:#efe7ff;padding:8px 18px;border-radius:12px;display:inline-block;margin:6px 0}
+.sep{border:none;border-top:1px solid var(--line);margin:16px 0}
 .pulse{animation:pulse 1.4s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-
-/* ===== Q-EDITOR (Quizlet Set Builder) ===== */
-.qe-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px;box-shadow:var(--shadow)}
-.qe-num{color:var(--primary);font-weight:800;font-size:.88rem;margin-bottom:10px}
-.opt-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.opt-row .opt-lbl{font-weight:800;width:24px;text-align:center;flex-shrink:0}
-.opt-row input{margin:0;flex:1}
-
-/* ===== LANDING HERO ===== */
-.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;max-width:900px;width:100%;align-items:center;margin-top:20px}
-.feat-item{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
-.feat-ico{width:38px;height:38px;border-radius:10px;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
-@media(max-width:720px){
-  .hero-grid{grid-template-columns:1fr}
-}
-@media(max-width:460px){
-  h1{font-size:1.65rem}
-  .ans-grid{grid-template-columns:1fr}
-  .q-text{font-size:1.15rem}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);padding:11px 22px;border-radius:12px;font-weight:800;z-index:999;color:#fff;opacity:0;transition:opacity .2s;pointer-events:none;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+#toast.show{opacity:1}
+@media(max-width:480px){
+  .k-grid{grid-template-columns:1fr}
+  h1{font-size:1.7rem}
 }
 </style>
 </head>
 <body>
 <div id="toast"></div>
 
-<!-- ══════════════════════════════════════════════════
-     TOP NAVBAR
-══════════════════════════════════════════════════ -->
-<header class="navbar">
-  <div class="brand" onclick="navHome()">
-    <div class="brand-logo">Q</div>
+<!-- 3-2-1 COUNTDOWN OVERLAY -->
+<div id="cd-overlay">
+  <div id="cd-sub" style="font-size:1.2rem;font-weight:800;margin-bottom:12px;opacity:.85">Бэлдээрэй!</div>
+  <div class="cd-num" id="cd-num">3</div>
+</div>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="brand" onclick="goHome()">
+    <div class="brand-badge">K!</div>
     <span>QuizRace</span>
   </div>
-  <div class="nav-actions">
-    <button class="btn btn-sm" id="theme-btn" onclick="toggleTheme()">🌙 Харанхуй</button>
-    <button class="btn btn-sm" id="nav-setup-btn" onclick="showView('v-setup')" style="display:none">⚙️ Firebase</button>
-    <button class="btn btn-sm btn-primary" id="nav-login-btn" onclick="showView('v-auth')" style="display:none">Нэвтрэх</button>
-    <button class="btn btn-sm" id="nav-logout-btn" onclick="doLogout()" style="display:none">🚪 Гарах</button>
-  </div>
+  <button class="btn btn-sm" id="home-btn" onclick="goHome()" style="display:none">🏠 Нүүр</button>
 </header>
 
 <!-- ══════════════════════════════════════════════════
-     SETUP VIEW — Firebase тохиргоо
+     HOME — Нэвтрэх, бүртгүүлэх шаардлагагүй!
 ══════════════════════════════════════════════════ -->
-<div id="v-setup" class="view">
-  <div class="card" style="max-width:580px;margin-top:24px">
-    <span class="hero-icon">🔧</span>
-    <h2 class="center">Firebase тохиргоо</h2>
-    <p class="muted center" style="margin-bottom:14px">Нэг удаа тохируулахад хангалттай. Дараа нь автоматаар хадгалагдана.</p>
-    <ol class="setup-ol">
-      <li>Браузерт <strong>console.firebase.google.com</strong> нээ</li>
-      <li>"<strong>Add project</strong>" → шинэ project нэр өг → үүсгэ</li>
-      <li>Project-доо <strong>&lt;/&gt;</strong> (Web) дарж app нэм</li>
-      <li><strong>Authentication</strong> → Sign-in method → <strong>Email/Password</strong> идэвхжүүл</li>
-      <li><strong>Realtime Database</strong> → Create database → <strong>Test mode</strong> → сонго</li>
-      <li>⚙️ Project Settings → <strong>Firebase SDK snippet</strong> → "Config" → хуулж доор тавь</li>
-    </ol>
-    <label>Firebase Config (JSON)</label>
-    <textarea id="fbConfig" placeholder='{"apiKey":"AIza...","authDomain":"xxx.firebaseapp.com","databaseURL":"https://xxx-default-rtdb.firebaseio.com","projectId":"xxx","storageBucket":"xxx.appspot.com","messagingSenderId":"111","appId":"1:111:web:aaa"}' style="min-height:120px;font-size:.82rem;font-family:monospace"></textarea>
-    <button class="btn btn-primary btn-full btn-lg" onclick="setupFirebase()">✅ Хадгалаад эхлэх</button>
+<div id="v-home" class="view active" style="justify-content:center">
+  <div class="card center" style="max-width:440px">
+    <div style="font-size:3.5rem;margin-bottom:6px">🏆</div>
+    <h1>Асуулт Уралдаан</h1>
+    <p class="muted" style="margin-bottom:20px">Бүртгүүлэх шаардлагагүй — шууд код эсвэл QR-аар орно!</p>
+
+    <label style="text-align:left">Тоглоомын PIN код</label>
+    <input id="join-pin" placeholder="6 оронтой код (ж.нь: 482910)" maxlength="6" inputmode="numeric" style="text-align:center;font-size:1.3rem;letter-spacing:3px">
+    <button class="btn btn-dark btn-full btn-lg" onclick="enterWithPin()">🎮 Нэгдэх</button>
+
+    <div class="sep"></div>
+    <button class="btn btn-primary btn-full btn-lg" onclick="openSets()">👩‍🏫 Багш: Асуулт бэлдэх / Эхлүүлэх</button>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     LANDING (Quizlet-inspired)
+     TEACHER SETS (Saved locally in browser)
 ══════════════════════════════════════════════════ -->
-<div id="v-landing" class="view">
-  <div class="hero-grid">
-    <div>
-      <span class="badge badge-blue" style="margin-bottom:12px">⚡ Quizlet Live хэв маягийн уралдаан</span>
-      <h1>Асуултаа бэлдээд<br>шууд уралдацгаая!</h1>
-      <p class="muted" style="margin-bottom:22px;font-size:1.02rem">
-        Багш 10, 15, 20 эсвэл 25 асуулттай багц үүсгэж, QR кодоор 40 хүртэлх суралцагчийг 60 секундын хурдны уралдаанд оролцуулна.
-      </p>
-      <div class="btn-group">
-        <button class="btn btn-primary btn-lg" onclick="switchTab('login');showView('v-auth')">👩‍🏫 Багшаар нэвтрэх</button>
-        <button class="btn btn-lg" onclick="switchTab('reg');showView('v-auth')">📝 Бүртгүүлэх</button>
-      </div>
-    </div>
-    <div class="card" style="margin:0">
-      <h3 style="margin-bottom:14px">Хэрхэн ажилладаг вэ?</h3>
-      <div class="feat-item">
-        <div class="feat-ico">📚</div>
-        <div><strong>10–25 асуулттай багц</strong><div class="muted" style="font-size:.85rem">Багш асуултаа оруулж хадгална</div></div>
-      </div>
-      <div class="feat-item">
-        <div class="feat-ico">📱</div>
-        <div><strong>QR кодоор 40 хүн</strong><div class="muted" style="font-size:.85rem">Хүүхдүүд нэр, дүр, хувцсаа сонгоод нэгдэнэ</div></div>
-      </div>
-      <div class="feat-item">
-        <div class="feat-ico">⏱️</div>
-        <div><strong>60 секунд = Оноо</strong><div class="muted" style="font-size:.85rem">Зөв хариулсан үлдсэн секундийн тоогоор оноо авна (34сек = 34 оноо)</div></div>
-      </div>
-      <div class="feat-item" style="margin-bottom:0">
-        <div class="feat-ico">🏆</div>
-        <div><strong>Байр эзлүүлэлт</strong><div class="muted" style="font-size:.85rem">Төгсгөлд нь оноогоор нь 1, 2, 3-р байр шалгаруулна</div></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════
-     AUTH — Багш нэвтрэх / бүртгүүлэх
-══════════════════════════════════════════════════ -->
-<div id="v-auth" class="view">
-  <button class="btn btn-sm back-btn" onclick="showView('v-landing')">← Буцах</button>
-  <div class="card">
-    <h2 class="center">Багшийн хэсэг</h2>
-    <div class="tabs">
-      <div class="tab active" id="tab-login" onclick="switchTab('login')">Нэвтрэх</div>
-      <div class="tab" id="tab-reg" onclick="switchTab('reg')">Бүртгүүлэх</div>
-    </div>
-    <div id="auth-login">
-      <label>И-мэйл</label>
-      <input id="l-email" type="email" placeholder="bagsh@school.mn">
-      <label>Нууц үг</label>
-      <input id="l-pass" type="password" placeholder="••••••••">
-      <button class="btn btn-primary btn-full btn-lg" onclick="doLogin()">Нэвтрэх →</button>
-    </div>
-    <div id="auth-reg" style="display:none">
-      <label>Таны нэр</label>
-      <input id="r-name" placeholder="Дорж багш">
-      <label>И-мэйл</label>
-      <input id="r-email" type="email" placeholder="bagsh@school.mn">
-      <label>Нууц үг (хамгийн багадаа 6 тэмдэгт)</label>
-      <input id="r-pass" type="password" placeholder="••••••••">
-      <button class="btn btn-primary btn-full btn-lg" onclick="doRegister()">Бүртгүүлэх →</button>
-    </div>
-    <p id="auth-err" style="color:var(--danger);text-align:center;display:none;margin-top:6px;font-weight:600"></p>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════════
-     DASHBOARD — Багшийн нүүр (Quizlet Study Sets)
-══════════════════════════════════════════════════ -->
-<div id="v-dashboard" class="view">
-  <div style="width:100%;max-width:900px">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+<div id="v-sets" class="view">
+  <div class="card wide">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px">
       <div>
-        <h2 style="margin:0">📚 Миний асуултын багцууд</h2>
-        <p class="muted" style="font-size:.9rem;margin:2px 0 0" id="dash-welcome"></p>
+        <h2 style="margin:0">📚 Асуултын багцууд</h2>
+        <p class="muted" style="font-size:.88rem">10, 15, 20, 25 асуулттай багц үүсгээд шууд QR-аар уралдуулна</p>
       </div>
-      <button class="btn btn-primary" onclick="openEditor(null)">➕ Шинэ багц үүсгэх</button>
+      <button class="btn btn-primary" onclick="openEditor(null)">➕ Шинэ багц</button>
     </div>
-    <div id="set-list" class="set-grid"></div>
+    <div id="set-list"></div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     EDITOR — Асуулт багц засах
+     EDITOR (10, 15, 20, 25 questions)
 ══════════════════════════════════════════════════ -->
 <div id="v-editor" class="view">
   <div style="width:100%;max-width:860px">
-    <button class="btn btn-sm back-btn" onclick="goToDash()">← Буцах</button>
+    <button class="btn btn-sm" style="margin-bottom:12px" onclick="openSets()">← Буцах</button>
     <div class="card wide full">
-      <h2>✏️ Шинэ багц бэлдэх</h2>
+      <h2>✏️ Асуултын багц</h2>
       <label>Багцын нэр</label>
       <input id="set-title" placeholder="жишээ: 7А анги — Математик">
       <label>Асуултын тоо</label>
-      <div class="btn-group" id="cnt-btns" style="margin-bottom:8px">
+      <div class="btn-group" style="margin-bottom:6px">
         <button class="btn" id="cnt-10" onclick="setQCount(10)">10 асуулт</button>
         <button class="btn" id="cnt-15" onclick="setQCount(15)">15 асуулт</button>
         <button class="btn" id="cnt-20" onclick="setQCount(20)">20 асуулт</button>
@@ -490,80 +285,78 @@ body.dark .badge-gold{background:#4a3b0c;color:#ffcd1f}
       </div>
     </div>
     <div id="q-editor-list"></div>
-    <button class="btn btn-success btn-full btn-lg" style="max-width:860px;margin-top:8px" onclick="saveSet()">💾 Багц хадгалах</button>
+    <button class="btn btn-green btn-full btn-lg" style="max-width:860px" onclick="saveSet()">💾 Хадгалах</button>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     LOBBY — QR, хүлээлгийн өрөө
+     LOBBY — QR код + PIN (Дээд тал нь 40 хүн)
 ══════════════════════════════════════════════════ -->
 <div id="v-lobby" class="view">
-  <div style="width:100%;max-width:900px">
-    <button class="btn btn-sm back-btn" onclick="closeLobby()">← Уралдаан цуцлах</button>
-    <div class="card wide full">
-      <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
-        <div style="flex:0 0 auto;text-align:center">
-          <h3>📱 QR код уншина уу</h3>
-          <div class="qr-wrap" id="qr-box"></div>
-          <p class="muted" style="font-size:.75rem;margin-bottom:8px;max-width:220px;word-break:break-all" id="join-url-txt"></p>
-          <span id="s-count-badge" class="badge badge-blue">0 / 40 суралцагч</span>
+  <div class="card wide">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <button class="btn btn-sm" onclick="closeLobby()">← Цуцлах</button>
+      <span id="s-count-badge" class="badge badge-purple" style="font-size:.95rem">0 / 40 суралцагч</span>
+    </div>
+    <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:0 0 auto;text-align:center">
+        <h3>📱 QR код уншина уу</h3>
+        <div class="qr-wrap" id="qr-box"></div>
+        <div class="muted" style="font-size:.82rem">Эсвэл PIN кодоор орно уу:</div>
+        <div class="pin-box" id="lobby-pin">------</div>
+        <p class="muted" style="font-size:.75rem;max-width:220px;word-break:break-all" id="join-url-txt"></p>
+      </div>
+      <div style="flex:1;min-width:240px">
+        <h3>🎮 Нэвтэрсэн суралцагчид</h3>
+        <div id="lobby-students" style="max-height:280px;overflow-y:auto;margin-bottom:14px">
+          <p class="muted" id="lobby-empty">Суралцагч хүлээж байна...</p>
         </div>
-        <div style="flex:1;min-width:240px">
-          <h3 style="margin-bottom:10px">🎮 Нэвтэрсэн суралцагчид</h3>
-          <div id="lobby-students" style="max-height:280px;overflow-y:auto;margin-bottom:14px">
-            <p class="muted" id="lobby-empty">Суралцагч хүлээж байна...</p>
-          </div>
-          <div class="sep"></div>
-          <button class="btn btn-success btn-full btn-lg" id="start-btn" onclick="startGame()" disabled>
-            🚀 Уралдаан эхлүүлэх
-          </button>
-          <p class="muted center" style="font-size:.85rem" id="start-hint">Дор хаяж 1 суралцагч нэвтэрсний дараа эхлүүлж болно</p>
-        </div>
+        <div class="sep"></div>
+        <button class="btn btn-green btn-full btn-lg" id="start-btn" onclick="startGame()" disabled>
+          🚀 Уралдаан эхлүүлэх (3-2-1)
+        </button>
+        <p class="muted center" style="font-size:.85rem" id="start-hint">Дор хаяж 1 суралцагч орсны дараа эхлүүлнэ</p>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     TEACHER GAME VIEW
+     TEACHER GAME
 ══════════════════════════════════════════════════ -->
 <div id="v-tgame" class="view">
   <div class="g-header">
-    <div style="min-width:150px">
-      <div class="q-label" id="tg-qlabel" style="text-align:left;margin-bottom:4px">1-р асуулт</div>
-      <div class="prog-bar-wrap"><div class="prog-bar" id="tg-prog" style="width:10%"></div></div>
-      <span id="tg-answered" class="badge badge-blue">0 хариулсан</span>
+    <div>
+      <div id="tg-qlabel" style="font-weight:900;color:var(--k-purple)">1 / 10 асуулт</div>
+      <span id="tg-answered" class="badge badge-blue" style="margin-top:4px">0 / 0 хариулсан</span>
     </div>
-    <div class="timer-wrap" id="tg-timer-wrap">
-      <svg width="88" height="88" viewBox="0 0 90 90">
+    <div class="timer-wrap">
+      <svg width="84" height="84" viewBox="0 0 90 90">
         <circle class="t-track" cx="45" cy="45" r="38" stroke-width="8"/>
-        <circle class="t-prog" id="tg-ring" cx="45" cy="45" r="38" stroke-width="8"
-          stroke-dasharray="238.8" stroke-dashoffset="0" stroke="#23b26d"/>
+        <circle class="t-prog" id="tg-ring" cx="45" cy="45" r="38" stroke-width="8" stroke-dasharray="238.8" stroke-dashoffset="0" stroke="#26890c"/>
       </svg>
-      <span class="t-num" id="tg-time" style="font-size:1.75rem;color:#23b26d">60</span>
+      <span class="t-num" id="tg-time" style="font-size:1.7rem;color:#26890c">60</span>
     </div>
-    <div class="btn-group">
-      <button class="btn btn-warning" id="tg-next-btn" onclick="nextQuestion()">Дараагийн →</button>
-    </div>
+    <button class="btn btn-yellow" id="tg-next-btn" onclick="nextQuestion()">Дараагийн →</button>
   </div>
 
-  <div class="q-box">
-    <p class="q-label" id="tg-qlabel2"></p>
-    <p class="q-text" id="tg-qtext">...</p>
-    <div class="ans-grid" id="tg-options"></div>
+  <div class="card wide" style="max-width:860px">
+    <h2 class="center" id="tg-qtext" style="margin-bottom:8px">...</h2>
+    <div class="k-grid" id="tg-options"></div>
   </div>
 
   <div class="stats-row">
-    <div class="stat-box"><div class="snum" id="tg-ncorrect" style="color:var(--success)">0</div><div class="slbl">✅ Зөв</div></div>
-    <div class="stat-box"><div class="snum" id="tg-nwrong" style="color:var(--danger)">0</div><div class="slbl">❌ Буруу</div></div>
-    <div class="stat-box"><div class="snum" id="tg-nnone" style="color:var(--muted)">0</div><div class="slbl">⏳ Хариуллаагүй</div></div>
+    <div class="stat-box"><div class="snum" id="tg-ncorrect" style="color:var(--k-green)">0</div><div class="muted" style="font-size:.82rem;font-weight:700">✅ Зөв</div></div>
+    <div class="stat-box"><div class="snum" id="tg-nwrong" style="color:var(--k-red)">0</div><div class="muted" style="font-size:.82rem;font-weight:700">❌ Буруу</div></div>
+    <div class="stat-box"><div class="snum" id="tg-nnone" style="color:var(--muted)">0</div><div class="muted" style="font-size:.82rem;font-weight:700">⏳ Хүлээж буй</div></div>
   </div>
 
   <div style="width:100%;max-width:860px">
-    <h3>🏎️ Уралдааны зам (Топ 5)</h3>
     <div class="race-track" id="tg-race-track"></div>
-    <h3>🏆 Онооны самбар</h3>
-    <div id="tg-mini-lb"></div>
+    <div class="card wide full" style="padding:16px">
+      <h3>🏆 Топ 5</h3>
+      <div id="tg-mini-lb"></div>
+    </div>
   </div>
 </div>
 
@@ -575,23 +368,23 @@ body.dark .badge-gold{background:#4a3b0c;color:#ffcd1f}
     <h2 class="center">🏆 Эцсийн дүн — Байр эзлүүлэлт</h2>
     <div id="t-final-lb"></div>
     <div class="sep"></div>
-    <button class="btn btn-primary btn-full btn-lg" onclick="goToDash()">📚 Багцууд руу буцах</button>
+    <button class="btn btn-primary btn-full btn-lg" onclick="openSets()">📚 Асуултын багцууд руу</button>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     STUDENT JOIN
+     STUDENT JOIN (Нэр, Дүр, Хувцас, Өнгө)
 ══════════════════════════════════════════════════ -->
 <div id="v-sjoin" class="view">
-  <div class="card" style="max-width:460px;margin-top:12px">
-    <h2 class="center" style="margin-bottom:14px">🎮 Уралдаанд нэгдэх</h2>
+  <div class="card" style="max-width:460px">
+    <h2 class="center" style="margin-bottom:12px">🎮 Уралдаанд нэгдэх</h2>
     <div class="char-preview" id="char-preview">
-      <div class="char-badge" id="pv-badge" style="border-color:#4255ff;background:#4255ff20">
+      <div class="char-badge" id="pv-badge" style="border-color:#e21b3c;background:#e21b3c20">
         <span id="pv-av">🦁</span>
         <span class="char-outfit" id="pv-out">👕</span>
       </div>
       <div>
-        <div id="pv-name" style="font-weight:800;font-size:1.1rem;color:#4255ff">Тоглогч</div>
+        <div id="pv-name" style="font-weight:900;font-size:1.1rem;color:#e21b3c">Тоглогч</div>
         <div class="muted" style="font-size:.82rem" id="pv-out-lbl">Футболка</div>
       </div>
     </div>
@@ -603,8 +396,8 @@ body.dark .badge-gold{background:#4a3b0c;color:#ffcd1f}
     <div class="outfit-grid" id="out-grid"></div>
     <label>Өнгө сонго</label>
     <div class="color-grid" id="col-grid"></div>
-    <button class="btn btn-primary btn-full btn-lg" onclick="studentJoin()">✅ Нэгдэх</button>
-    <p id="sjoin-err" style="color:var(--danger);text-align:center;display:none;margin-top:4px;font-weight:600"></p>
+    <button class="btn btn-green btn-full btn-lg" id="sjoin-btn" onclick="studentJoin()">✅ Шууд нэгдэх</button>
+    <p id="sjoin-err" style="color:var(--k-red);text-align:center;display:none;margin-top:6px;font-weight:700"></p>
   </div>
 </div>
 
@@ -615,11 +408,9 @@ body.dark .badge-gold{background:#4a3b0c;color:#ffcd1f}
   <div class="card center" style="max-width:420px">
     <div id="sw-avatar" style="font-size:4.5rem;margin-bottom:8px">🦁👕</div>
     <h2 id="sw-name">Нэр</h2>
-    <p class="muted">Багш уралдааныг эхлүүлэхийг хүлээж байна...</p>
-    <div style="margin-top:16px">
-      <span id="sw-cnt" class="badge badge-blue">? суралцагч нэгдсэн</span>
-    </div>
-    <div style="font-size:2rem;margin-top:22px" class="pulse">⏳</div>
+    <p class="muted">Багш эхлүүлэхийг хүлээж байна...</p>
+    <div style="margin-top:14px"><span id="sw-cnt" class="badge badge-purple">Холбогдсон</span></div>
+    <div style="font-size:2rem;margin-top:20px" class="pulse">⏳</div>
   </div>
 </div>
 
@@ -627,32 +418,28 @@ body.dark .badge-gold{background:#4a3b0c;color:#ffcd1f}
      STUDENT GAME
 ══════════════════════════════════════════════════ -->
 <div id="v-sgame" class="view">
-  <div class="g-header" style="max-width:540px">
-    <span id="sg-qnum" class="badge badge-blue">1 / 10</span>
+  <div class="g-header" style="max-width:560px">
+    <span id="sg-qnum" class="badge badge-purple">1 / 10</span>
     <div class="timer-wrap">
-      <svg width="102" height="102" viewBox="0 0 110 110">
+      <svg width="96" height="96" viewBox="0 0 110 110">
         <circle class="t-track" cx="55" cy="55" r="46" stroke-width="9"/>
-        <circle class="t-prog" id="sg-ring" cx="55" cy="55" r="46" stroke-width="9"
-          stroke-dasharray="289.0" stroke-dashoffset="0" stroke="#23b26d"/>
+        <circle class="t-prog" id="sg-ring" cx="55" cy="55" r="46" stroke-width="9" stroke-dasharray="289.0" stroke-dashoffset="0" stroke="#26890c"/>
       </svg>
-      <span class="t-num" id="sg-time" style="font-size:2rem;color:#23b26d">60</span>
+      <span class="t-num" id="sg-time" style="font-size:1.9rem;color:#26890c">60</span>
     </div>
-    <span id="sg-score" class="badge badge-gold" style="font-size:.9rem">0 оноо</span>
+    <span id="sg-score" class="badge badge-gold" style="font-size:.92rem">0 оноо</span>
   </div>
 
-  <div class="q-box" style="max-width:540px" id="sg-q-box">
-    <p class="q-label" id="sg-qlabel"></p>
-    <p class="q-text" id="sg-qtext">...</p>
-    <div class="ans-grid" id="sg-options"></div>
+  <div class="card" style="max-width:560px">
+    <h2 class="center" id="sg-qtext" style="margin-bottom:8px">...</h2>
+    <div class="k-grid" id="sg-options"></div>
   </div>
 
-  <div id="sg-feedback" class="card" style="max-width:540px;display:none">
-    <div class="feedback">
-      <span class="ficon" id="sf-icon">✅</span>
-      <div class="ftitle" id="sf-title">Зөв!</div>
-      <div class="fpts" id="sf-pts">+34 оноо</div>
-      <p class="fcorrect" id="sf-correct"></p>
-    </div>
+  <div id="sg-feedback" class="card center" style="max-width:560px;display:none">
+    <div id="sf-icon" style="font-size:3.5rem">✅</div>
+    <h2 id="sf-title" style="margin:6px 0">Зөв!</h2>
+    <div id="sf-pts" style="font-size:2.2rem;font-weight:900;color:var(--k-purple)">+34 оноо</div>
+    <p id="sf-correct" class="muted" style="margin-top:6px"></p>
   </div>
 </div>
 
@@ -660,10 +447,10 @@ body.dark .badge-gold{background:#4a3b0c;color:#ffcd1f}
      STUDENT RESULTS
 ══════════════════════════════════════════════════ -->
 <div id="v-sresults" class="view">
-  <div class="card center" style="max-width:460px;margin-top:12px">
-    <div id="sr-avatar" style="font-size:4rem;margin-bottom:8px">🏆</div>
+  <div class="card center" style="max-width:460px">
+    <div id="sr-avatar" style="font-size:4rem;margin-bottom:6px">🏆</div>
     <h2 id="sr-name">Нэр</h2>
-    <div class="big-num" id="sr-score" style="margin:10px 0">0</div>
+    <div style="font-size:3rem;font-weight:900;color:var(--k-purple)" id="sr-score">0</div>
     <p class="muted">нийт оноо</p>
     <div id="sr-rank" class="badge badge-green" style="font-size:1rem;margin-top:10px">🥇 1-р байр</div>
   </div>
@@ -676,489 +463,382 @@ body.dark .badge-gold{background:#4a3b0c;color:#ffcd1f}
 <script>
 const AVATARS = ['🦁','🐯','🦊','🐺','🐻','🐼','🐨','🐸','🦋','🦄','🐬','🦅','🐉','🤖','👾','🐙','🦑','🐥','🦉','🦚','🐓','🕊️','🐇','🦝','🦨','🦡','🐧'];
 const OUTFITS = [
-  {icon:'👕', label:'Футболка'},
-  {icon:'🧥', label:'Хүрэм'},
-  {icon:'👔', label:'Костюм'},
-  {icon:'👗', label:'Даашинз'},
-  {icon:'🥋', label:'Кимоно'},
-  {icon:'🦸', label:'Нөмрөг'},
-  {icon:'🎓', label:'Малгай'},
-  {icon:'👑', label:'Титэм'},
-  {icon:'🕶️', label:'Шил'},
-  {icon:'🎒', label:'Цүнх'}
+  {icon:'👕', label:'Футболка'},{icon:'🧥', label:'Хүрэм'},{icon:'👔', label:'Костюм'},
+  {icon:'👗', label:'Даашинз'},{icon:'🥋', label:'Кимоно'},{icon:'🦸', label:'Нөмрөг'},
+  {icon:'🎓', label:'Малгай'},{icon:'👑', label:'Титэм'},{icon:'🕶️', label:'Шил'},{icon:'🎒', label:'Цүнх'}
 ];
-const COLORS  = ['#4255ff','#ff725b','#ff9c1a','#23b26d','#06b6d4','#8b5cf6','#ec4899','#eab308'];
+const COLORS  = ['#e21b3c','#1368ce','#d89e00','#26890c','#46178f','#06b6d4','#ec4899','#f97316'];
+const SHAPES  = ['▲','◆','●','■'];
 const MEDALS  = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
-const ANS_LBL = ['A','B','C','D'];
+const SETS_KEY = 'quizrace-sets-v1';
 
-let db = null, auth = null;
-let currentUser = null;
-let sessionId   = null;
-let studentId   = null;
-let myAvatar    = AVATARS[0];
-let myOutfit    = OUTFITS[0].icon;
-let myColor     = COLORS[0];
-let editSetId   = null;
-let qCount      = 10;
-let editQs      = [];
-let currentSession = null;
-let answered    = false;
-let myScore     = 0;
-let lastQIdx    = -1;
-let timerIv     = null;
-let sessRef  = null, sessCb  = null;
-let lobRef   = null, lobCb   = null;
+const PEER_CFG = {
+  config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }
+};
 
-/* ── THEME ── */
-function applyTheme(dark) {
-  document.body.classList.toggle('dark', dark);
-  ge('theme-btn').textContent = dark ? '☀️ Цайвар' : '🌙 Харанхуй';
-}
-function toggleTheme() {
-  const next = !document.body.classList.contains('dark');
-  localStorage.setItem('qr-theme', next ? 'dark' : 'light');
-  applyTheme(next);
-}
+let peer = null;
+let roomPin = null;
+let hostConn = null;
+let students = {};      // teacher side: { sid: { id, name, avatar, outfit, color, score, conn } }
+let activeSet = null;
+let qIdx = -1;
+let qAnswers = {};      // { sid: { answer, correct, points } }
+let timerIv = null;
 
-/* ── FIREBASE SETUP ── */
-function setupFirebase() {
-  const raw = ge('fbConfig').value.trim();
+// Editor state
+let editSetId = null;
+let qCount = 10;
+let editQs = [];
+
+// Student state
+let studentId = null;
+let myAvatar = AVATARS[0], myOutfit = OUTFITS[0].icon, myColor = COLORS[0];
+let myScore = 0, sAnswered = false, sQStart = 0, currentQ = null;
+
+/* ── INIT & DEFAULT SAMPLE SET ── */
+function loadSets() {
   try {
-    const cfg = JSON.parse(raw);
-    if (!cfg.apiKey)      throw new Error('apiKey байхгүй');
-    if (!cfg.databaseURL) throw new Error('databaseURL байхгүй — Realtime Database идэвхжүүлснийхаа дараа шинэчил');
-    localStorage.setItem('fb-cfg', JSON.stringify(cfg));
-    initFB(cfg);
-  } catch(e) { alert('⚠️ Алдаа: ' + e.message); }
+    const raw = localStorage.getItem(SETS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  const sample = [{
+    id: 'sample1',
+    title: 'Жишээ багц — Ерөнхий мэдлэг',
+    count: 10,
+    at: Date.now(),
+    questions: [
+      { text:'Монгол Улсын нийслэл аль хот вэ?', options:['Дархан','Эрдэнэт','Улаанбаатар','Чойбалсан'], correct:2 },
+      { text:'Нарны аймгийн хамгийн том гариг аль нь вэ?', options:['Ангараг','Бархасбадь','Санчир','Дэлхий'], correct:1 },
+      { text:'1 цагт хэдэн минут байдаг вэ?', options:['30','45','60','100'], correct:2 },
+      { text:'7 x 8 хэд вэ?', options:['54','56','58','64'], correct:1 },
+      { text:'Усны химийн томьёо аль нь вэ?', options:['CO2','H2O','O2','NaCl'], correct:1 },
+      { text:'Дэлхийн хамгийн том далай аль нь вэ?', options:['Атлантын','Энэтхэгийн','Номхон','Хойд мөсөн'], correct:2 },
+      { text:'Монгол цагаан толгой хэдэн үсэгтэй вэ?', options:['33','35','36','32'], correct:1 },
+      { text:'Гурвалжны дотоод өнцгүүдийн нийлбэр хэдэн градус вэ?', options:['90°','180°','270°','360°'], correct:1 },
+      { text:'Нэг жилд хэдэн сар байдаг вэ?', options:['10','11','12','13'], correct:2 },
+      { text:'Дэлхий нарыг хэдэн хоногт нэг бүтэн тойрдог вэ?', options:['365','300','180','400'], correct:0 }
+    ]
+  }];
+  saveSets(sample);
+  return sample;
 }
-
-function initFB(cfg) {
-  if (!firebase.apps.length) firebase.initializeApp(cfg);
-  db   = firebase.database();
-  auth = firebase.auth();
-  auth.onAuthStateChanged(u => {
-    currentUser = u;
-    updateNav();
-    if (u && !sessionId) { loadDashboard(); showView('v-dashboard'); }
-    else if (!u && !sessionId) showView('v-landing');
-  });
-}
-
-function updateNav() {
-  const isStudent = Boolean(new URLSearchParams(location.search).get('join'));
-  ge('nav-setup-btn').style.display  = isStudent ? 'none' : '';
-  ge('nav-login-btn').style.display  = (!isStudent && !currentUser) ? '' : 'none';
-  ge('nav-logout-btn').style.display = (!isStudent && currentUser)  ? '' : 'none';
-}
-
-function navHome() {
-  if (sessionId && new URLSearchParams(location.search).get('join')) return;
-  if (currentUser) goToDash();
-  else showView('v-landing');
-}
+function saveSets(arr) { localStorage.setItem(SETS_KEY, JSON.stringify(arr)); }
 
 function init() {
-  applyTheme(localStorage.getItem('qr-theme') === 'dark');
   const p = new URLSearchParams(location.search);
-  const jid = p.get('join');
-  const cfg64 = p.get('cfg');
-
-  if (jid && cfg64) {
-    try {
-      const cfg = JSON.parse(atob(decodeURIComponent(cfg64)));
-      initFB(cfg);
-      sessionId = jid;
-      updateNav();
-      studentId = sessionStorage.getItem('sid') || null;
-      if (studentId) rejoinAsStudent();
-      else { buildJoinView(); showView('v-sjoin'); }
-    } catch(e) { alert('QR алдаатай'); showView('v-landing'); }
+  const rm = p.get('room');
+  if (rm) {
+    roomPin = rm;
+    buildJoinView();
+    showView('v-sjoin');
     return;
   }
-
-  updateNav();
-  const saved = localStorage.getItem('fb-cfg');
-  if (!saved) { showView('v-setup'); return; }
-  try { initFB(JSON.parse(saved)); showView('v-landing'); }
-  catch(e) { showView('v-setup'); }
+  showView('v-home');
 }
 
-/* ── VIEW & TABS ── */
 function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
   ge(id).classList.add('active');
-}
-function switchTab(t) {
-  ['login','reg'].forEach(x => {
-    ge('auth-'+x).style.display = x===t ? '' : 'none';
-    ge('tab-'+x).classList.toggle('active', x===t);
-  });
-  ge('auth-err').style.display='none';
+  ge('home-btn').style.display = (id === 'v-home' || id === 'v-sjoin' || id === 'v-swait' || id === 'v-sgame') ? 'none' : '';
 }
 
-/* ── TOAST ── */
-function toast(msg, col='#23b26d') {
+function goHome() {
+  cleanupPeer();
+  if (new URLSearchParams(location.search).get('room')) return;
+  showView('v-home');
+}
+
+function cleanupPeer() {
+  clearInterval(timerIv); timerIv = null;
+  if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
+  students = {}; hostConn = null;
+}
+
+function toast(msg, col='#26890c') {
   const el = ge('toast');
   el.textContent = msg; el.style.background = col;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2600);
+  setTimeout(() => el.classList.remove('show'), 2500);
 }
 
-/* ── TEACHER AUTH ── */
-async function doRegister() {
-  const name = v('r-name'), email = v('r-email'), pass = v('r-pass');
-  const err = ge('auth-err');
-  if (!name||!email||!pass) { showErr(err,'Бүх талбарыг бөглөнэ үү'); return; }
-  try {
-    err.style.display='none';
-    const c = await auth.createUserWithEmailAndPassword(email, pass);
-    await db.ref(`teachers/${c.user.uid}`).set({ name, email, at: Date.now() });
-    toast('Бүртгэл амжилттай! 🎉');
-  } catch(e) { showErr(err, fbErr(e)); }
-}
-
-async function doLogin() {
-  const email = v('l-email'), pass = v('l-pass');
-  const err = ge('auth-err');
-  if (!email||!pass) { showErr(err,'И-мэйл болон нууц үгийг бөглөнэ үү'); return; }
-  try {
-    err.style.display='none';
-    await auth.signInWithEmailAndPassword(email, pass);
-  } catch(e) { showErr(err, fbErr(e)); }
-}
-
-async function doLogout() {
-  clearAll();
-  await auth.signOut();
-  showView('v-landing');
-}
-
-function fbErr(e) {
-  const m = {
-    'auth/user-not-found':'И-мэйл бүртгэлгүй',
-    'auth/wrong-password':'Нууц үг буруу',
-    'auth/invalid-credential':'И-мэйл эсвэл нууц үг буруу',
-    'auth/email-already-in-use':'И-мэйл аль хэдийн бүртгэлтэй',
-    'auth/weak-password':'Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой',
-    'auth/invalid-email':'И-мэйл буруу форматтай',
-  };
-  return m[e.code] || e.message;
-}
-
-/* ── DASHBOARD ── */
-async function loadDashboard() {
-  if (!currentUser) return;
-  const tSnap = await db.ref(`teachers/${currentUser.uid}/name`).get();
-  ge('dash-welcome').textContent = `Сайн байна уу, ${tSnap.val()||'багш'} 👋`;
-
-  const snap = await db.ref(`teachers/${currentUser.uid}/sets`).get();
-  const sets = snap.val() || {};
-  const list = ge('set-list');
-  const entries = Object.entries(sets).sort((a,b)=>b[1].at-a[1].at);
-
-  if (!entries.length) {
-    list.innerHTML = '<div class="card full center" style="grid-column:1/-1"><p class="muted" style="padding:20px 0">Одоогоор багц байхгүй. «Шинэ багц үүсгэх» дарж нэмнэ үү!</p></div>';
-    return;
-  }
-  list.innerHTML = entries.map(([id,s])=>`
-    <div class="set-card">
-      <div>
-        <div class="set-card-title">${esc(s.title)}</div>
-        <div class="set-card-meta">
-          <span class="badge badge-blue">${s.count} асуулт</span>
-          <span>${new Date(s.at).toLocaleDateString('mn-MN')}</span>
-        </div>
+/* ── TEACHER SETS & EDITOR ── */
+function openSets() {
+  cleanupPeer();
+  const sets = loadSets();
+  const el = ge('set-list');
+  el.innerHTML = sets.length ? sets.map(s => `
+    <div class="lb-row" style="margin-bottom:10px">
+      <div class="lb-info">
+        <div class="lb-name">${esc(s.title)}</div>
+        <div class="muted" style="font-size:.82rem">${s.count} асуулт</div>
       </div>
       <div class="btn-group">
-        <button class="btn btn-primary btn-sm" style="flex:1" onclick="startSession('${id}')">▶️ Уралдаан</button>
-        <button class="btn btn-sm" onclick="openEditor('${id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="delSet('${id}')">🗑️</button>
+        <button class="btn btn-green btn-sm" onclick="startLobby('${s.id}')">▶️ Уралдаан</button>
+        <button class="btn btn-sm" onclick="openEditor('${s.id}')">✏️</button>
+        <button class="btn btn-red btn-sm" onclick="delSet('${s.id}')">🗑️</button>
       </div>
     </div>
-  `).join('');
+  `).join('') : '<p class="muted center">Багц алга байна. «Шинэ багц» дарж үүсгэнэ үү.</p>';
+  showView('v-sets');
 }
 
-function goToDash() { clearAll(); sessionId = null; loadDashboard(); showView('v-dashboard'); }
-
-async function delSet(id) {
+function delSet(id) {
   if (!confirm('Энэ багцыг устгах уу?')) return;
-  await db.ref(`teachers/${currentUser.uid}/sets/${id}`).remove();
-  loadDashboard(); toast('Устгасан','#ff725b');
+  saveSets(loadSets().filter(s => s.id !== id));
+  openSets();
 }
 
-/* ── EDITOR ── */
-function openEditor(setId) {
-  editSetId = setId; editQs = []; qCount = 10;
+function openEditor(id) {
+  editSetId = id; editQs = []; qCount = 10;
   ge('set-title').value = '';
-  if (setId) {
-    db.ref(`teachers/${currentUser.uid}/sets/${setId}`).get().then(snap=>{
-      const s = snap.val(); if (!s) return;
+  if (id) {
+    const s = loadSets().find(x => x.id === id);
+    if (s) {
       ge('set-title').value = s.title;
       qCount = s.count;
-      editQs = JSON.parse(JSON.stringify(s.questions || []));
-      setQCount(qCount, true);
-    });
-  } else { setQCount(10, true); }
+      editQs = JSON.parse(JSON.stringify(s.questions));
+    }
+  }
+  setQCount(qCount, true);
   showView('v-editor');
 }
 
 function setQCount(n, skipTrim) {
   qCount = n;
-  [10,15,20,25].forEach(c => {
-    ge('cnt-'+c).className = c===n ? 'btn btn-primary' : 'btn';
-  });
+  [10,15,20,25].forEach(c => ge('cnt-'+c).className = c===n ? 'btn btn-primary' : 'btn');
   while (editQs.length < n) editQs.push({ text:'', options:['','','',''], correct:0 });
   if (!skipTrim) editQs = editQs.slice(0,n);
-  renderEditor();
-}
-
-function renderEditor() {
-  ge('q-editor-list').innerHTML = editQs.slice(0,qCount).map((q,i)=>`
+  ge('q-editor-list').innerHTML = editQs.slice(0,qCount).map((q,i) => `
     <div class="qe-card">
-      <div class="qe-num">${i+1}-р асуулт</div>
-      <label>Асуулт</label>
-      <input value="${esc(q.text)}" placeholder="Асуулт бич..." oninput="editQs[${i}].text=this.value">
-      <label style="margin-bottom:8px">Хариултууд (зөв хариултыг сонгоно уу)</label>
-      ${['A','B','C','D'].map((lbl,j)=>`
+      <div style="font-weight:800;color:var(--k-purple);margin-bottom:8px">${i+1}-р асуулт</div>
+      <input value="${esc(q.text)}" placeholder="Асуултаа бич..." oninput="editQs[${i}].text=this.value">
+      ${['▲ Улаан','◆ Цэнхэр','● Шар','■ Ногоон'].map((lbl,j) => `
         <div class="opt-row">
           <input type="radio" name="cor${i}" value="${j}" ${q.correct===j?'checked':''} onchange="editQs[${i}].correct=${j}">
-          <span class="opt-lbl" style="color:${['#ff725b','#4255ff','#23b26d','#ff9c1a'][j]}">${lbl}</span>
-          <input value="${esc(q.options[j]||'')}" placeholder="Хариулт ${lbl}..." oninput="editQs[${i}].options[${j}]=this.value" style="margin:0">
+          <span style="font-weight:800;min-width:74px;font-size:.85rem">${lbl}</span>
+          <input value="${esc(q.options[j]||'')}" placeholder="Хариулт ${j+1}..." oninput="editQs[${i}].options[${j}]=this.value">
         </div>
       `).join('')}
     </div>
   `).join('');
 }
 
-async function saveSet() {
+function saveSet() {
   const title = v('set-title');
   if (!title) { alert('Багцын нэрийг бичнэ үү'); return; }
-  for (let i=0;i<qCount;i++) {
+  for (let i=0; i<qCount; i++) {
     const q = editQs[i];
     if (!q.text.trim()) { alert(`${i+1}-р асуулт хоосон байна`); return; }
-    if (q.options.some(o=>!o.trim())) { alert(`${i+1}-р асуултын бүх хариулт (A,B,C,D) бичнэ үү`); return; }
+    if (q.options.some(o => !o.trim())) { alert(`${i+1}-р асуултын бүх 4 хариултыг бөглөнө үү`); return; }
   }
-  const id = editSetId || db.ref().push().key;
-  await db.ref(`teachers/${currentUser.uid}/sets/${id}`).set({
-    title, count: qCount, at: Date.now(),
-    questions: editQs.slice(0,qCount)
-  });
-  editSetId = id;
+  const sets = loadSets();
+  const obj = { id: editSetId || ('s'+Date.now().toString(36)), title, count: qCount, at: Date.now(), questions: editQs.slice(0,qCount) };
+  const idx = sets.findIndex(x => x.id === obj.id);
+  if (idx >= 0) sets[idx] = obj; else sets.unshift(obj);
+  saveSets(sets);
   toast('Хадгалагдлаа ✅');
-  setTimeout(()=>{ loadDashboard(); showView('v-dashboard'); }, 450);
+  openSets();
 }
 
-/* ── SESSION & LOBBY ── */
-async function startSession(setId) {
-  const setSnap = await db.ref(`teachers/${currentUser.uid}/sets/${setId}`).get();
-  const set = setSnap.val();
-  if (!set) { alert('Багц олдсонгүй'); return; }
-  const tNameSnap = await db.ref(`teachers/${currentUser.uid}/name`).get();
+/* ── TEACHER LOBBY (PeerJS + QR) ── */
+function startLobby(setId) {
+  activeSet = loadSets().find(x => x.id === setId);
+  if (!activeSet) return;
+  cleanupPeer();
 
-  sessionId = db.ref('sessions').push().key;
-  await db.ref(`sessions/${sessionId}`).set({
-    tid: currentUser.uid,
-    tname: tNameSnap.val()||'Багш',
-    status: 'lobby',
-    cq: -1,
-    qst: 0,
-    total: set.count,
-    questions: set.questions,
-    students: {},
-    answers: {},
-    at: Date.now()
-  });
-  openLobby();
-}
-
-function openLobby() {
-  ge('qr-box').innerHTML = '';
-  const rawCfg = JSON.parse(localStorage.getItem('fb-cfg') || '{}');
-  const minCfg = {
-    apiKey: rawCfg.apiKey,
-    authDomain: rawCfg.authDomain,
-    databaseURL: rawCfg.databaseURL,
-    projectId: rawCfg.projectId
-  };
-  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(minCfg))));
-  const url = `${location.origin}${location.pathname}?join=${sessionId}&cfg=${encodeURIComponent(b64)}`;
+  roomPin = String(Math.floor(100000 + Math.random() * 900000));
+  ge('lobby-pin').textContent = roomPin;
+  const url = `${location.origin}${location.pathname}?room=${roomPin}`;
   ge('join-url-txt').textContent = url;
-  try {
-    new QRCode(ge('qr-box'),{ text:url, width:200, height:200,
-      colorDark:'#282e3e', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.L });
-  } catch(e) {}
+  ge('qr-box').innerHTML = '';
+  new QRCode(ge('qr-box'), { text: url, width: 200, height: 200, colorDark: '#25076b', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
 
-  clearLob();
-  lobRef = db.ref(`sessions/${sessionId}/students`);
-  lobCb  = snap => {
-    const sts = snap.val()||{};
-    const cnt = Object.keys(sts).length;
-    ge('s-count-badge').textContent = `${cnt} / 40 суралцагч`;
-    ge('start-btn').disabled = cnt===0;
-    ge('start-hint').textContent = cnt===0
-      ? 'Дор хаяж 1 суралцагч нэвтэрсний дараа эхлүүлж болно'
-      : `${cnt} суралцагч бэлэн — эхлүүлж болно`;
-    ge('lobby-empty').style.display = cnt?'none':'';
-    ge('lobby-students').innerHTML = Object.values(sts).map(s=>`
-      <div class="s-chip" style="border-color:${s.color};color:${s.color}">${s.avatar}${s.outfit||''} ${esc(s.name)}</div>
-    `).join('');
-  };
-  lobRef.on('value', lobCb);
+  updateLobbyUI();
   showView('v-lobby');
+
+  peer = new Peer('quizrace-' + roomPin, PEER_CFG);
+  peer.on('error', err => toast('Холболтын алдаа: ' + err.type, '#e21b3c'));
+  peer.on('connection', conn => {
+    conn.on('data', data => handleTeacherMsg(conn, data));
+    conn.on('close', () => {
+      const sid = conn._sid;
+      if (sid && students[sid] && qIdx === -1) {
+        delete students[sid];
+        updateLobbyUI();
+        broadcast({ type: 'count', count: Object.keys(students).length });
+      }
+    });
+  });
+}
+
+function handleTeacherMsg(conn, data) {
+  if (data.type === 'join') {
+    const cnt = Object.keys(students).length;
+    if (cnt >= 40) {
+      conn.send({ type: 'full', msg: 'Уралдаанд 40 хүн дүүрсэн байна!' });
+      return;
+    }
+    const sid = 'st' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+    conn._sid = sid;
+    students[sid] = { id: sid, name: data.name, avatar: data.avatar, outfit: data.outfit, color: data.color, score: 0, conn };
+    conn.send({ type: 'joined', sid, count: Object.keys(students).length });
+    updateLobbyUI();
+    broadcast({ type: 'count', count: Object.keys(students).length });
+  } else if (data.type === 'answer') {
+    const st = students[data.sid];
+    if (!st || data.qIndex !== qIdx || qAnswers[data.sid]) return;
+    qAnswers[data.sid] = { answer: data.answer, correct: data.correct, points: data.points };
+    if (data.correct) st.score += data.points;
+    renderTeacherGame();
+  }
+}
+
+function broadcast(msg) {
+  Object.values(students).forEach(s => { try { if (s.conn && s.conn.open) s.conn.send(msg); } catch(e){} });
+}
+
+function updateLobbyUI() {
+  const arr = Object.values(students);
+  ge('s-count-badge').textContent = `${arr.length} / 40 суралцагч`;
+  ge('start-btn').disabled = arr.length === 0;
+  ge('start-hint').textContent = arr.length === 0 ? 'Дор хаяж 1 суралцагч орсны дараа эхлүүлнэ' : `${arr.length} суралцагч бэлэн!`;
+  ge('lobby-empty').style.display = arr.length ? 'none' : '';
+  ge('lobby-students').innerHTML = arr.map(s =>
+    `<div class="s-chip" style="border-color:${s.color};color:${s.color}">${s.avatar}${s.outfit} ${esc(s.name)}</div>`
+  ).join('');
 }
 
 function closeLobby() {
   if (!confirm('Уралдааныг цуцлах уу?')) return;
-  db.ref(`sessions/${sessionId}/status`).set('cancelled');
-  goToDash();
+  broadcast({ type: 'cancelled' });
+  openSets();
 }
 
-async function startGame() {
-  clearLob();
-  await db.ref(`sessions/${sessionId}`).update({ status:'playing', cq:0, qst:Date.now() });
-  watchTeacherSession();
-  showView('v-tgame');
+/* ── 3-2-1 COUNTDOWN & GAME FLOW ── */
+function runCountdown(label, cb) {
+  const ov = ge('cd-overlay'), num = ge('cd-num'), sub = ge('cd-sub');
+  sub.textContent = label;
+  let c = 3;
+  num.textContent = c;
+  ov.classList.add('show');
+  const iv = setInterval(() => {
+    c--;
+    if (c > 0) { num.textContent = c; }
+    else {
+      clearInterval(iv);
+      ov.classList.remove('show');
+      cb();
+    }
+  }, 900);
 }
 
-/* ── TEACHER GAME ── */
-let tLastQ = -1;
-
-function watchTeacherSession() {
-  clearSess();
-  sessRef = db.ref(`sessions/${sessionId}`);
-  sessCb  = snap => {
-    const s = snap.val(); if (!s) return;
-    currentSession = s;
-    if (s.status==='finished') { clearTimers(); renderTResults(s); showView('v-tresults'); return; }
-    if (s.status!=='playing') return;
-    renderTGame(s);
-    if (s.cq !== tLastQ) { tLastQ=s.cq; startTTimer(s.qst); }
-  };
-  sessRef.on('value', sessCb);
+function startGame() {
+  qIdx = 0;
+  launchQuestion();
 }
 
-function renderTGame(s) {
-  const qi = s.cq, q = s.questions[qi], total=s.total;
-  const sts = s.students||{}, ans=(s.answers&&s.answers[qi])||{};
-  const nSt = Object.keys(sts).length, nAns = Object.keys(ans).length;
+function launchQuestion() {
+  qAnswers = {};
+  const q = activeSet.questions[qIdx];
+  const total = activeSet.count;
+  broadcast({ type: 'countdown', qIndex: qIdx, total });
+  runCountdown(`${qIdx+1}-р асуулт эхэллээ!`, () => {
+    broadcast({ type: 'question', qIndex: qIdx, total, question: q });
+    showView('v-tgame');
+    renderTeacherGame();
+    startTeacherTimer();
+  });
+}
 
-  ge('tg-qlabel').textContent   = `${qi+1} / ${total} асуулт`;
-  ge('tg-qlabel2').textContent  = `${qi+1}-р асуулт`;
-  ge('tg-qtext').textContent    = q.text;
-  ge('tg-prog').style.width     = `${(qi+1)/total*100}%`;
-  ge('tg-answered').textContent = `${nAns} / ${nSt} хариулсан`;
-  ge('tg-next-btn').textContent = qi+1 >= total ? '🏁 Дүн харах' : 'Дараагийн →';
+function renderTeacherGame() {
+  const q = activeSet.questions[qIdx], total = activeSet.count;
+  const stArr = Object.values(students);
+  const nAns = Object.keys(qAnswers).length;
 
-  ge('tg-options').innerHTML = q.options.map((opt,i)=>`
-    <div class="ans-btn ans-${ANS_LBL[i]} ${i===q.correct?'teacher-correct':''}" style="pointer-events:none">
-      <span class="lbl">${ANS_LBL[i]}</span> ${esc(opt)}
+  ge('tg-qlabel').textContent = `${qIdx+1} / ${total} асуулт`;
+  ge('tg-answered').textContent = `${nAns} / ${stArr.length} хариулсан`;
+  ge('tg-next-btn').textContent = qIdx+1 >= total ? '🏁 Дүн харах' : 'Дараагийн →';
+  ge('tg-qtext').textContent = q.text;
+
+  ge('tg-options').innerHTML = q.options.map((opt,i) => `
+    <div class="k-tile k-${i} ${i===q.correct?'correct-mark':''}" style="cursor:default">
+      <span class="k-shape">${SHAPES[i]}</span>
+      <span>${esc(opt)}</span>
     </div>
   `).join('');
 
-  let cor=0,wr=0;
-  Object.values(ans).forEach(a=>a.correct?cor++:wr++);
+  let cor = 0, wr = 0;
+  Object.values(qAnswers).forEach(a => a.correct ? cor++ : wr++);
   ge('tg-ncorrect').textContent = cor;
-  ge('tg-nwrong').textContent   = wr;
-  ge('tg-nnone').textContent    = Math.max(0, nSt - nAns);
+  ge('tg-nwrong').textContent = wr;
+  ge('tg-nnone').textContent = Math.max(0, stArr.length - nAns);
 
-  const ranked = Object.entries(sts).map(([id,s])=>({...s,id})).sort((a,b)=>b.score-a.score).slice(0,5);
-  const maxPossible = Math.max(60, total * 60);
-  ge('tg-race-track').innerHTML = ranked.map(s=>{
-    const pct = Math.min(82, Math.round((s.score / maxPossible) * 82));
+  const ranked = [...stArr].sort((a,b) => b.score - a.score).slice(0,5);
+  const maxPts = Math.max(60, total * 60);
+  ge('tg-race-track').innerHTML = ranked.map(s => {
+    const pct = Math.min(82, Math.round((s.score / maxPts) * 82));
     return `
       <div class="race-lane">
         <div class="race-fill" style="width:${Math.max(6, pct+18)}%;background:${s.color}"></div>
         <div class="race-runner" style="margin-left:${pct}%;color:${s.color}">
-          <span>${s.avatar}${s.outfit||''}</span>
-          <span>${esc(s.name)}</span>
+          <span>${s.avatar}${s.outfit}</span><span>${esc(s.name)}</span>
         </div>
         <div class="race-score">${s.score}</div>
       </div>`;
-  }).join('') || '<p class="muted center">Суралцагч алга</p>';
+  }).join('');
 
-  ge('tg-mini-lb').innerHTML = ranked.map((s,i)=>`
+  ge('tg-mini-lb').innerHTML = ranked.map((s,i) => `
     <div class="lb-row">
       <div class="lb-rank">${MEDALS[i]||(i+1)}</div>
-      <div class="lb-avatar">${s.avatar}${s.outfit||''}</div>
+      <div class="lb-avatar">${s.avatar}${s.outfit}</div>
       <div class="lb-info"><div class="lb-name" style="color:${s.color}">${esc(s.name)}</div></div>
       <div class="lb-pts">${s.score}</div>
     </div>
-  `).join('') || '<p class="muted center">Бүртгэлгүй</p>';
+  `).join('');
 }
 
-function startTTimer(qst) {
-  clearTimers();
-  const circ = 238.8, ring=ge('tg-ring'), tn=ge('tg-time');
-  timerIv = setInterval(()=>{
-    const left = Math.max(0, 60-(Date.now()-qst)/1000);
+function startTeacherTimer() {
+  clearInterval(timerIv);
+  const start = Date.now(), circ = 238.8, ring = ge('tg-ring'), tn = ge('tg-time');
+  timerIv = setInterval(() => {
+    const left = Math.max(0, 60 - (Date.now() - start)/1000);
     tn.textContent = Math.ceil(left);
-    ring.style.strokeDashoffset = circ*(1-left/60);
-    const col = left>30?'#23b26d':left>15?'#ff9c1a':'#ff725b';
+    ring.style.strokeDashoffset = circ * (1 - left/60);
+    const col = left>30 ? '#26890c' : left>15 ? '#d89e00' : '#e21b3c';
     ring.style.stroke = col; tn.style.color = col;
-    if (left<=0) clearTimers();
-  },120);
+    if (left <= 0) clearInterval(timerIv);
+  }, 120);
 }
 
-async function nextQuestion() {
-  if (!currentSession) return;
-  const nxt = currentSession.cq+1;
-  if (nxt >= currentSession.total) {
-    await db.ref(`sessions/${sessionId}/status`).set('finished');
+function nextQuestion() {
+  clearInterval(timerIv);
+  if (qIdx + 1 >= activeSet.count) {
+    const ranked = Object.values(students)
+      .map(s => ({ id: s.id, name: s.name, avatar: s.avatar, outfit: s.outfit, color: s.color, score: s.score }))
+      .sort((a,b) => b.score - a.score);
+    broadcast({ type: 'finished', ranked });
+    ge('t-final-lb').innerHTML = renderPodium(ranked) + renderLB(ranked, null);
+    showView('v-tresults');
   } else {
-    await db.ref(`sessions/${sessionId}`).update({ cq:nxt, qst:Date.now(), status:'playing' });
+    qIdx++;
+    launchQuestion();
   }
 }
 
-function renderPodium(ranked) {
-  if (!ranked.length) return '';
-  const top = [ranked[1], ranked[0], ranked[2]].filter(Boolean);
-  return `<div class="podium">${top.map(x => {
-    const r = ranked.indexOf(x) + 1;
-    return `
-      <div class="pod-col pod-${r}">
-        <div style="font-size:1.7rem">${MEDALS[r-1]}</div>
-        <div style="font-size:2.3rem;margin:4px 0">${x.avatar}${x.outfit||''}</div>
-        <div style="font-weight:800;color:${x.color};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.name)}</div>
-        <div style="font-size:1.2rem;font-weight:800;color:var(--primary);margin-top:4px">${x.score} оноо</div>
-      </div>`;
-  }).join('')}</div>`;
+/* ── STUDENT JOIN & PLAY ── */
+function enterWithPin() {
+  const pin = v('join-pin').replace(/\D/g,'');
+  if (pin.length < 4) { alert('Тоглоомын PIN кодыг зөв оруулна уу'); return; }
+  roomPin = pin;
+  buildJoinView();
+  showView('v-sjoin');
 }
 
-function renderTResults(s) {
-  const sts = s.students||{};
-  const ranked = Object.entries(sts).map(([id,x])=>({...x,id})).sort((a,b)=>b.score-a.score);
-  ge('t-final-lb').innerHTML = ranked.length ? (
-    renderPodium(ranked) +
-    ranked.map((x,i)=>`
-      <div class="lb-row">
-        <div class="lb-rank">${MEDALS[i]||(i+1)}</div>
-        <div class="lb-avatar">${x.avatar}${x.outfit||''}</div>
-        <div class="lb-info">
-          <div class="lb-name" style="color:${x.color}">${esc(x.name)}</div>
-          <div class="lb-sub">${i+1}-р байр · Нийт ${x.score} оноо</div>
-        </div>
-        <div class="lb-pts">${x.score}</div>
-      </div>
-    `).join('')
-  ) : '<p class="muted center">Оролцогч байхгүй байна</p>';
-}
-
-/* ── STUDENT JOIN ── */
 function buildJoinView() {
-  ge('av-grid').innerHTML = AVATARS.map((a,i)=>`
-    <span class="av-opt ${i===0?'sel':''}" onclick="pickAv(this,'${a}')">${a}</span>
-  `).join('');
-  myAvatar = AVATARS[0];
-
-  ge('out-grid').innerHTML = OUTFITS.map((o,i)=>`
-    <span class="out-opt ${i===0?'sel':''}" onclick="pickOut(this,'${o.icon}','${o.label}')">${o.icon} ${o.label}</span>
-  `).join('');
-  myOutfit = OUTFITS[0].icon;
-
-  ge('col-grid').innerHTML = COLORS.map((c,i)=>`
-    <div class="col-opt ${i===0?'sel':''}" style="background:${c}" onclick="pickCol(this,'${c}')"></div>
-  `).join('');
-  myColor = COLORS[0];
+  ge('av-grid').innerHTML = AVATARS.map((a,i) => `<span class="av-opt ${i===0?'sel':''}" onclick="pickAv(this,'${a}')">${a}</span>`).join('');
+  ge('out-grid').innerHTML = OUTFITS.map((o,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickOut(this,'${o.icon}','${o.label}')">${o.icon} ${o.label}</span>`).join('');
+  ge('col-grid').innerHTML = COLORS.map((c,i) => `<div class="col-opt ${i===0?'sel':''}" style="background:${c}" onclick="pickCol(this,'${c}')"></div>`).join('');
+  myAvatar = AVATARS[0]; myOutfit = OUTFITS[0].icon; myColor = COLORS[0];
   updatePreview();
 }
 
@@ -1169,224 +849,172 @@ function updatePreview() {
   ge('pv-name').textContent = name;
   ge('pv-name').style.color = myColor;
   ge('pv-badge').style.borderColor = myColor;
-  ge('pv-badge').style.background = myColor + '20';
-  ge('char-preview').style.borderColor = myColor;
+  ge('pv-badge').style.background = myColor + '22';
 }
-
 function pickAv(el,a){ document.querySelectorAll('.av-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myAvatar=a; updatePreview(); }
 function pickOut(el,o,lbl){ document.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myOutfit=o; ge('pv-out-lbl').textContent=lbl; updatePreview(); }
 function pickCol(el,c){ document.querySelectorAll('.col-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myColor=c; updatePreview(); }
 
-async function studentJoin() {
-  const name = v('s-name');
-  const err  = ge('sjoin-err');
-  if (!name) { showErr(err,'Нэрээ бичнэ үү'); return; }
-  err.style.display='none';
+function studentJoin() {
+  const name = v('s-name'), err = ge('sjoin-err');
+  if (!name) { err.textContent = 'Нэрээ бичнэ үү'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  ge('sjoin-btn').disabled = true;
+  ge('sjoin-btn').textContent = 'Холбогдож байна...';
 
-  const snap = await db.ref(`sessions/${sessionId}`).get();
-  const s = snap.val();
-  if (!s) { showErr(err,'Уралдаан олдсонгүй'); return; }
-  if (s.status==='finished'||s.status==='cancelled') { showErr(err,'Уралдаан дууссан байна'); return; }
-
-  const sts = s.students||{};
-  if (Object.keys(sts).length >= 40) { showErr(err,'Уралдаанд 40 хүн дүүрсэн!'); return; }
-
-  studentId = `s${Date.now().toString(36)}${Math.random().toString(36).slice(2,5)}`;
-  sessionStorage.setItem('sid', studentId);
-
-  await db.ref(`sessions/${sessionId}/students/${studentId}`).set({
-    name, avatar:myAvatar, outfit:myOutfit, color:myColor, score:0, at:Date.now()
+  peer = new Peer(PEER_CFG);
+  peer.on('open', () => {
+    hostConn = peer.connect('quizrace-' + roomPin, { reliable: true });
+    hostConn.on('open', () => {
+      hostConn.send({ type: 'join', name, avatar: myAvatar, outfit: myOutfit, color: myColor });
+    });
+    hostConn.on('data', handleStudentMsg);
+    hostConn.on('error', () => {
+      err.textContent = 'Өрөө олдсонгүй. PIN кодоо шалгана уу.';
+      err.style.display = 'block';
+      ge('sjoin-btn').disabled = false;
+      ge('sjoin-btn').textContent = '✅ Шууд нэгдэх';
+    });
   });
-
-  myScore = 0; lastQIdx = -1; answered = false;
-  ge('sw-avatar').textContent = myAvatar + myOutfit;
-  ge('sw-name').textContent   = name;
-  watchStudentSession();
-  showView('v-swait');
+  peer.on('error', () => {
+    err.textContent = 'Өрөө олдсонгүй эсвэл багш гараагүй байна.';
+    err.style.display = 'block';
+    ge('sjoin-btn').disabled = false;
+    ge('sjoin-btn').textContent = '✅ Шууд нэгдэх';
+  });
 }
 
-/* ── STUDENT GAME ── */
-function watchStudentSession() {
-  clearSess();
-  sessRef = db.ref(`sessions/${sessionId}`);
-  sessCb  = snap => {
-    const s = snap.val(); if (!s) return;
-    currentSession = s;
-
-    const cnt = Object.keys(s.students||{}).length;
-    const swc = ge('sw-cnt'); if(swc) swc.textContent = `${cnt} суралцагч нэгдсэн`;
-
-    if (s.status==='playing') { renderStudentGame(s); showView('v-sgame'); }
-    else if (s.status==='finished') { clearTimers(); renderStudentResults(s); showView('v-sresults'); }
-  };
-  sessRef.on('value', sessCb);
-}
-
-function renderStudentGame(s) {
-  const qi = s.cq, q = s.questions[qi];
-  ge('sg-qnum').textContent   = `${qi+1} / ${s.total}`;
-  ge('sg-score').textContent  = `${myScore} оноо`;
-  ge('sg-qlabel').textContent = `${qi+1}-р асуулт`;
-  ge('sg-qtext').textContent  = q.text;
-
-  if (qi !== lastQIdx) {
-    lastQIdx = qi;
-    answered = false;
-    ge('sg-feedback').style.display='none';
-    ge('sg-q-box').style.display='';
-    ge('sg-options').innerHTML = q.options.map((opt,i)=>`
-      <button class="ans-btn ans-${ANS_LBL[i]}" onclick="submitAns(${i})">
-        <span class="lbl">${ANS_LBL[i]}</span> ${esc(opt)}
-      </button>
-    `).join('');
-    startSTimer(s.qst);
+function handleStudentMsg(data) {
+  if (data.type === 'full') {
+    const err = ge('sjoin-err');
+    err.textContent = data.msg; err.style.display = 'block';
+    ge('sjoin-btn').disabled = false; ge('sjoin-btn').textContent = '✅ Шууд нэгдэх';
+  } else if (data.type === 'joined') {
+    studentId = data.sid;
+    ge('sw-avatar').textContent = myAvatar + myOutfit;
+    ge('sw-name').textContent = v('s-name');
+    ge('sw-cnt').textContent = `${data.count} суралцагч нэгдсэн`;
+    showView('v-swait');
+  } else if (data.type === 'count') {
+    ge('sw-cnt').textContent = `${data.count} суралцагч нэгдсэн`;
+  } else if (data.type === 'countdown') {
+    runCountdown(`${data.qIndex+1}-р асуулт эхэллээ!`, () => {});
+  } else if (data.type === 'question') {
+    ge('cd-overlay').classList.remove('show');
+    showStudentQuestion(data);
+  } else if (data.type === 'finished') {
+    clearInterval(timerIv);
+    showStudentResults(data.ranked);
+  } else if (data.type === 'cancelled') {
+    alert('Багш уралдааныг цуцаллаа.');
+    location.href = location.pathname;
   }
 }
 
-function startSTimer(qst) {
-  clearTimers();
-  const circ=289.0, ring=ge('sg-ring'), tn=ge('sg-time');
-  timerIv = setInterval(()=>{
-    const left=Math.max(0,60-(Date.now()-qst)/1000);
-    tn.textContent=Math.ceil(left);
-    ring.style.strokeDashoffset=circ*(1-left/60);
-    const col=left>30?'#23b26d':left>15?'#ff9c1a':'#ff725b';
-    ring.style.stroke=col; tn.style.color=col;
-    if(left<=0&&!answered){ clearTimers(); showTimeUp(); }
-  },120);
-}
+function showStudentQuestion(data) {
+  currentQ = data.question;
+  qIdx = data.qIndex;
+  sAnswered = false;
+  sQStart = Date.now();
 
-async function submitAns(ai) {
-  if (answered||!currentSession) return;
-  answered=true; clearTimers();
-
-  const qi=currentSession.cq, q=currentSession.questions[qi];
-  const left=Math.max(0,Math.round(60-(Date.now()-currentSession.qst)/1000));
-  const correct=ai===q.correct;
-  const pts=correct?left:0;
-
-  document.querySelectorAll('#sg-options .ans-btn').forEach((b,i)=>{
-    b.disabled=true;
-    if(i===q.correct) b.classList.add('correct');
-    else if(i===ai&&!correct) b.classList.add('wrong');
-    else b.classList.add('dimmed');
-  });
-
-  ge('sf-icon').textContent   = correct?'✅':'❌';
-  ge('sf-title').textContent  = correct?'Зөв хариулт!':'Буруу хариулт';
-  ge('sf-pts').textContent    = correct?`+${pts} оноо`:'0 оноо';
-  ge('sf-correct').textContent= `Зөв хариулт: ${ANS_LBL[q.correct]}. ${q.options[q.correct]}`;
-  ge('sg-feedback').style.display='';
-
-  await db.ref(`sessions/${sessionId}/answers/${qi}/${studentId}`).set({
-    answer:ai, correct, points:pts, time:Date.now()
-  });
-  if (correct) {
-    myScore += pts;
-    await db.ref(`sessions/${sessionId}/students/${studentId}/score`).transaction(x=>(x||0)+pts);
-  }
+  ge('sg-qnum').textContent = `${data.qIndex+1} / ${data.total}`;
   ge('sg-score').textContent = `${myScore} оноо`;
+  ge('sg-qtext').textContent = currentQ.text;
+  ge('sg-feedback').style.display = 'none';
+  ge('sg-options').innerHTML = currentQ.options.map((opt,i) => `
+    <button class="k-tile k-${i}" onclick="submitStudentAns(${i})">
+      <span class="k-shape">${SHAPES[i]}</span>
+      <span>${esc(opt)}</span>
+    </button>
+  `).join('');
+  showView('v-sgame');
+
+  clearInterval(timerIv);
+  const circ = 289.0, ring = ge('sg-ring'), tn = ge('sg-time');
+  timerIv = setInterval(() => {
+    const left = Math.max(0, 60 - (Date.now() - sQStart)/1000);
+    tn.textContent = Math.ceil(left);
+    ring.style.strokeDashoffset = circ * (1 - left/60);
+    const col = left>30 ? '#26890c' : left>15 ? '#d89e00' : '#e21b3c';
+    ring.style.stroke = col; tn.style.color = col;
+    if (left <= 0 && !sAnswered) {
+      clearInterval(timerIv);
+      submitStudentAns(-1);
+    }
+  }, 120);
 }
 
-function showTimeUp() {
-  if(answered) return;
-  answered=true;
-  if(!currentSession) return;
-  const q=currentSession.questions[currentSession.cq];
-  document.querySelectorAll('#sg-options .ans-btn').forEach((b,i)=>{
-    b.disabled=true;
-    if(i===q.correct) b.classList.add('correct');
+function submitStudentAns(ai) {
+  if (sAnswered) return;
+  sAnswered = true;
+  clearInterval(timerIv);
+
+  const left = Math.max(0, Math.round(60 - (Date.now() - sQStart)/1000));
+  const correct = ai === currentQ.correct;
+  const pts = correct ? left : 0;
+
+  document.querySelectorAll('#sg-options .k-tile').forEach((b,i) => {
+    b.disabled = true;
+    if (i === currentQ.correct) b.classList.add('correct-mark');
     else b.classList.add('dimmed');
   });
-  ge('sf-icon').textContent  ='⏰';
-  ge('sf-title').textContent ='Хугацаа дууслаа!';
-  ge('sf-pts').textContent   ='0 оноо';
-  ge('sf-correct').textContent=`Зөв хариулт: ${ANS_LBL[q.correct]}. ${q.options[q.correct]}`;
-  ge('sg-feedback').style.display='';
-  const qi=currentSession.cq;
-  db.ref(`sessions/${sessionId}/answers/${qi}/${studentId}`).set({
-    answer:-1, correct:false, points:0, time:Date.now()
-  });
+
+  ge('sf-icon').textContent = ai === -1 ? '⏰' : (correct ? '✅' : '❌');
+  ge('sf-title').textContent = ai === -1 ? 'Хугацаа дууслаа!' : (correct ? 'Зөв хариуллаа!' : 'Буруу хариулт');
+  ge('sf-pts').textContent = correct ? `+${pts} оноо` : '0 оноо';
+  ge('sf-correct').textContent = `Зөв хариулт: ${SHAPES[currentQ.correct]} ${currentQ.options[currentQ.correct]}`;
+  ge('sg-feedback').style.display = '';
+
+  if (correct) myScore += pts;
+  ge('sg-score').textContent = `${myScore} оноо`;
+
+  if (hostConn && hostConn.open) {
+    hostConn.send({ type: 'answer', sid: studentId, qIndex: qIdx, answer: ai, correct, points: pts });
+  }
 }
 
-function renderStudentResults(s) {
-  const sts=s.students||{};
-  const me=sts[studentId]||{};
-  const ranked=Object.entries(sts).map(([id,x])=>({...x,id})).sort((a,b)=>b.score-a.score);
-  const myRank=ranked.findIndex(x=>x.id===studentId)+1;
+function showStudentResults(ranked) {
+  const idx = ranked.findIndex(x => x.id === studentId);
+  const rank = idx >= 0 ? idx + 1 : ranked.length;
+  ge('sr-avatar').textContent = myAvatar + myOutfit;
+  ge('sr-name').textContent = v('s-name');
+  ge('sr-score').textContent = myScore;
+  const rEl = ge('sr-rank');
+  rEl.textContent = `${MEDALS[rank-1]||(rank+'р')} ${rank}-р байр`;
+  rEl.className = `badge ${rank===1?'badge-gold':rank<=3?'badge-green':'badge-purple'}`;
+  ge('sr-lb').innerHTML = renderPodium(ranked) + renderLB(ranked, studentId);
+  showView('v-sresults');
+}
 
-  ge('sr-avatar').textContent=(me.avatar||'🏆')+(me.outfit||'');
-  ge('sr-name').textContent  =me.name||'';
-  ge('sr-score').textContent =me.score||0;
+function renderPodium(ranked) {
+  if (!ranked.length) return '';
+  const top = [ranked[1], ranked[0], ranked[2]].filter(Boolean);
+  return `<div class="podium">${top.map(x => {
+    const r = ranked.indexOf(x) + 1;
+    return `
+      <div class="pod-col pod-${r}">
+        <div style="font-size:1.7rem">${MEDALS[r-1]}</div>
+        <div style="font-size:2.2rem;margin:4px 0">${x.avatar}${x.outfit||''}</div>
+        <div style="font-weight:800;color:${x.color};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.name)}</div>
+        <div style="font-size:1.15rem;font-weight:900;color:var(--k-purple);margin-top:4px">${x.score} оноо</div>
+      </div>`;
+  }).join('')}</div>`;
+}
 
-  const rEl=ge('sr-rank');
-  rEl.textContent=`${MEDALS[myRank-1]||(myRank+'р')} ${myRank}-р байр`;
-  rEl.className=`badge ${myRank===1?'badge-gold':myRank<=3?'badge-green':'badge-blue'}`;
-
-  ge('sr-lb').innerHTML=renderPodium(ranked)+ranked.map((x,i)=>`
-    <div class="lb-row ${x.id===studentId?'me':''}">
+function renderLB(ranked, meId) {
+  return ranked.map((x,i) => `
+    <div class="lb-row ${x.id===meId?'me':''}">
       <div class="lb-rank">${MEDALS[i]||(i+1)}</div>
       <div class="lb-avatar">${x.avatar}${x.outfit||''}</div>
-      <div class="lb-info">
-        <div class="lb-name" style="color:${x.color}">${esc(x.name)}${x.id===studentId?' 👈':''}</div>
-      </div>
+      <div class="lb-info"><div class="lb-name" style="color:${x.color}">${esc(x.name)}${x.id===meId?' 👈':''}</div></div>
       <div class="lb-pts">${x.score}</div>
     </div>
   `).join('');
 }
 
-async function rejoinAsStudent() {
-  const snap=await db.ref(`sessions/${sessionId}`).get();
-  const s=snap.val();
-  if (!s) { buildJoinView(); showView('v-sjoin'); return; }
-  const me=(s.students||{})[studentId];
-  if (!me) { buildJoinView(); showView('v-sjoin'); return; }
-
-  myScore=me.score||0; lastQIdx=-1; answered=false;
-  currentSession=s;
-
-  if (s.status==='lobby') {
-    ge('sw-avatar').textContent=me.avatar+(me.outfit||'');
-    ge('sw-name').textContent  =me.name;
-    watchStudentSession(); showView('v-swait');
-  } else if (s.status==='playing') {
-    const qi=s.cq;
-    const myAns=(s.answers&&s.answers[qi]&&s.answers[qi][studentId]);
-    renderStudentGame(s);
-    if (myAns) {
-      answered=true; clearTimers();
-      const q=s.questions[qi];
-      document.querySelectorAll('#sg-options .ans-btn').forEach((b,i)=>{
-        b.disabled=true;
-        if(i===q.correct) b.classList.add('correct');
-        else if(i===myAns.answer&&!myAns.correct) b.classList.add('wrong');
-        else b.classList.add('dimmed');
-      });
-      ge('sf-icon').textContent   = myAns.correct?'✅':(myAns.answer===-1?'⏰':'❌');
-      ge('sf-title').textContent  = myAns.correct?'Зөв хариулт!':(myAns.answer===-1?'Хугацаа дууслаа!':'Буруу хариулт');
-      ge('sf-pts').textContent    = myAns.correct?`+${myAns.points} оноо`:'0 оноо';
-      ge('sf-correct').textContent= `Зөв хариулт: ${ANS_LBL[q.correct]}. ${q.options[q.correct]}`;
-      ge('sg-feedback').style.display='';
-    }
-    watchStudentSession(); showView('v-sgame');
-  } else if (s.status==='finished') {
-    renderStudentResults(s); showView('v-sresults');
-  } else {
-    buildJoinView(); showView('v-sjoin');
-  }
-}
-
-function clearTimers() { if(timerIv){clearInterval(timerIv);timerIv=null;} }
-function clearSess()   { if(sessRef&&sessCb){sessRef.off('value',sessCb);sessRef=null;sessCb=null;} }
-function clearLob()    { if(lobRef&&lobCb){lobRef.off('value',lobCb);lobRef=null;lobCb=null;} }
-function clearAll()    { clearTimers();clearSess();clearLob(); }
-
-function ge(id)  { return document.getElementById(id); }
-function v(id)   { return ge(id).value.trim(); }
-function showErr(el,msg){ el.textContent=msg; el.style.display='block'; }
-function esc(s)  {
-  return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+function ge(id) { return document.getElementById(id); }
+function v(id) { return ge(id).value.trim(); }
+function esc(s) { return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 init();
 </script>
