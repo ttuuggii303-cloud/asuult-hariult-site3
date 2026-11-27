@@ -1,190 +1,1394 @@
-!<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="mn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Асуулт хариулт</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>QuizRace — Асуулт Уралдаан</title>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<!-- QR Code -->
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
 <style>
-  :root {
-    --bg: #f5f7fa;
-    --surface: #ffffff;
-    --text: #1d2433;
-    --muted: #667085;
-    --line: #dfe4ec;
-    --accent: #1f5eff;
-    --accent-text: #ffffff;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #14171f;
-      --surface: #1c202b;
-      --text: #e8ebf2;
-      --muted: #9aa3b5;
-      --line: #2e3446;
-      --accent: #6c93ff;
-      --accent-text: #0e1220;
-    }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    line-height: 1.55;
-  }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
-  h1 { font-size: 1.8rem; margin: 8px 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 24px; }
-  .box {
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: 10px; padding: 16px; margin-bottom: 16px;
-  }
-  input, textarea {
-    width: 100%; padding: 10px 12px; margin-bottom: 10px;
-    font: inherit; color: var(--text); background: var(--bg);
-    border: 1px solid var(--line); border-radius: 8px;
-  }
-  textarea { min-height: 80px; resize: vertical; }
-  button {
-    font: inherit; cursor: pointer; padding: 8px 16px;
-    border-radius: 8px; border: 1px solid var(--line);
-    background: var(--surface); color: var(--text);
-  }
-  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
-  button.small { padding: 4px 10px; font-size: .85rem; }
-  .q-title { font-size: 1.15rem; font-weight: 600; margin: 0 0 4px; }
-  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 8px; }
-  .answers { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
-  .answer { padding: 8px 0; border-bottom: 1px dashed var(--line); }
-  .answer:last-child { border-bottom: 0; }
-  .answer p { margin: 0 0 4px; white-space: pre-wrap; }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .empty { text-align: center; color: var(--muted); padding: 32px 0; }
-  .search { margin-bottom: 16px; }
+/* ===== QUIZLET-INSPIRED THEME ===== */
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --surface-alt: #f0f2f8;
+  --text: #282e3e;
+  --muted: #586380;
+  --line: #edeff4;
+  --line-strong: #d9dde8;
+  --primary: #4255ff;
+  --primary-hover: #3142d6;
+  --primary-soft: #eef0ff;
+  --gold: #ffcd1f;
+  --success: #23b26d;
+  --success-soft: #e7f8ef;
+  --danger: #ff725b;
+  --danger-soft: #ffefec;
+  --warning: #ff9c1a;
+  --shadow: 0 2px 12px rgba(40, 46, 62, 0.06);
+  --shadow-lg: 0 8px 28px rgba(40, 46, 62, 0.09);
+}
+body.dark {
+  --bg: #0a092d;
+  --surface: #2e3856;
+  --surface-alt: #1f2640;
+  --text: #f6f7fb;
+  --muted: #a8b1cc;
+  --line: #3b466b;
+  --line-strong: #4e5b88;
+  --primary: #5b6eff;
+  --primary-hover: #4255ff;
+  --primary-soft: #262f5a;
+  --success-soft: #143d2b;
+  --danger-soft: #4a2120;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+/* ===== RESET ===== */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+  min-height:100vh;
+  line-height:1.55;
+  transition:background .2s,color .2s;
+}
+
+/* ===== TOP NAVBAR (Quizlet style) ===== */
+.navbar{
+  position:sticky;top:0;z-index:50;
+  background:var(--surface);
+  border-bottom:1px solid var(--line);
+  padding:10px 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  box-shadow:0 1px 4px rgba(40,46,62,.04);
+}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  font-size:1.2rem;font-weight:800;color:var(--primary);cursor:pointer;
+  letter-spacing:-.02em;
+}
+.brand-logo{
+  width:34px;height:34px;border-radius:10px;
+  background:var(--primary);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.15rem;font-weight:900;
+}
+.nav-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ===== VIEWS ===== */
+.view{display:none;min-height:calc(100vh - 57px);padding:24px 16px 48px;flex-direction:column;align-items:center}
+.view.active{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ===== TYPOGRAPHY ===== */
+h1{font-size:2.1rem;font-weight:800;margin-bottom:8px;letter-spacing:-.02em}
+h2{font-size:1.45rem;font-weight:800;margin-bottom:14px;letter-spacing:-.01em}
+h3{font-size:1.08rem;font-weight:700;margin-bottom:10px}
+.muted{color:var(--muted)}
+.center{text-align:center}
+
+/* ===== CARD ===== */
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:24px;
+  width:100%;
+  max-width:480px;
+  margin-bottom:16px;
+  box-shadow:var(--shadow);
+}
+.card.wide{max-width:900px}
+.card.full{max-width:100%;width:100%}
+
+/* ===== FORM ===== */
+label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+input,textarea,select{
+  display:block;width:100%;
+  padding:11px 14px;margin-bottom:12px;
+  font:inherit;color:var(--text);background:var(--surface-alt);
+  border:2px solid transparent;border-radius:10px;font-size:.98rem;outline:none;
+  transition:border-color .15s,background .15s;
+}
+input:focus,textarea:focus,select:focus{
+  border-color:var(--primary);
+  background:var(--surface);
+}
+textarea{min-height:80px;resize:vertical}
+input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--primary);transform:scale(1.15);cursor:pointer}
+
+/* ===== BUTTONS ===== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 18px;border-radius:10px;border:1px solid var(--line-strong);
+  background:var(--surface);color:var(--text);font:inherit;font-weight:700;cursor:pointer;
+  transition:all .15s;font-size:.92rem;text-decoration:none;white-space:nowrap;
+}
+.btn:hover{background:var(--surface-alt);border-color:var(--primary)}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--primary-hover);border-color:var(--primary-hover)}
+.btn-success{background:var(--success);border-color:var(--success);color:#fff}
+.btn-success:hover:not(:disabled){filter:brightness(.93)}
+.btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn-danger:hover:not(:disabled){filter:brightness(.93)}
+.btn-warning{background:var(--gold);border-color:var(--gold);color:#282e3e}
+.btn-warning:hover:not(:disabled){filter:brightness(.95)}
+.btn-sm{padding:6px 12px;font-size:.82rem;border-radius:8px}
+.btn-lg{padding:13px 26px;font-size:1.05rem;border-radius:12px}
+.btn-full{width:100%;margin-bottom:10px}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ===== TABS ===== */
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--surface-alt);border-radius:10px;padding:4px}
+.tab{flex:1;padding:9px;text-align:center;border-radius:8px;cursor:pointer;font-weight:700;color:var(--muted);transition:all .15s;user-select:none}
+.tab.active{background:var(--surface);color:var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+/* ===== BADGE ===== */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:99px;font-size:.8rem;font-weight:700}
+.badge-green{background:var(--success-soft);color:var(--success)}
+.badge-blue{background:var(--primary-soft);color:var(--primary)}
+.badge-red{background:var(--danger-soft);color:var(--danger)}
+.badge-gold{background:#fff7d6;color:#996c00}
+body.dark .badge-gold{background:#4a3b0c;color:#ffcd1f}
+
+/* ===== STUDY SET GRID (Quizlet Dashboard) ===== */
+.set-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.set-card{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;
+  transition:transform .15s,border-color .15s,box-shadow .15s;
+}
+.set-card:hover{transform:translateY(-2px);border-color:var(--primary);box-shadow:var(--shadow-lg)}
+.set-card-title{font-size:1.1rem;font-weight:800;margin-bottom:6px;color:var(--text)}
+.set-card-meta{font-size:.82rem;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* ===== TIMER RING ===== */
+.timer-wrap{position:relative;display:inline-block}
+.timer-wrap svg{transform:rotate(-90deg);display:block}
+.t-track{stroke:var(--line);fill:none}
+.t-prog{fill:none;stroke-linecap:round;transition:stroke-dashoffset .15s linear,stroke .4s}
+.t-num{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-weight:800;line-height:1;
+}
+
+/* ===== ANSWER BUTTONS (Quizlet Live style) ===== */
+.ans-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.ans-btn{
+  padding:16px 14px;border-radius:14px;border:2px solid var(--line-strong);
+  font-size:.98rem;font-weight:700;cursor:pointer;transition:all .15s;
+  text-align:left;line-height:1.35;min-height:74px;background:var(--surface);color:var(--text);
+  display:flex;align-items:flex-start;gap:10px;box-shadow:var(--shadow);
+}
+.ans-btn span.lbl{
+  font-size:.95rem;font-weight:800;min-width:26px;height:26px;border-radius:7px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;
+}
+.ans-A span.lbl{background:#ff725b}
+.ans-B span.lbl{background:#4255ff}
+.ans-C span.lbl{background:#23b26d}
+.ans-D span.lbl{background:#ff9c1a}
+.ans-btn:hover:not(:disabled){border-color:var(--primary);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.ans-btn:disabled{cursor:default;transform:none!important}
+.ans-btn.correct{background:var(--success)!important;border-color:var(--success)!important;color:#fff!important}
+.ans-btn.correct span.lbl{background:rgba(255,255,255,.25)!important}
+.ans-btn.wrong{background:var(--danger)!important;border-color:var(--danger)!important;color:#fff!important}
+.ans-btn.wrong span.lbl{background:rgba(255,255,255,.25)!important}
+.ans-btn.dimmed{opacity:.45}
+.ans-btn.teacher-correct{background:var(--success)!important;border-color:var(--success)!important;color:#fff!important}
+
+/* ===== LEADERBOARD ===== */
+.lb-row{
+  display:flex;align-items:center;gap:12px;padding:12px 16px;
+  border-radius:12px;background:var(--surface);border:1px solid var(--line);margin-bottom:8px;
+  box-shadow:0 1px 3px rgba(0,0,0,.03);
+}
+.lb-row.me{border:2px solid var(--primary);background:var(--primary-soft)}
+.lb-rank{font-size:1.4rem;width:36px;text-align:center;flex-shrink:0;font-weight:800}
+.lb-avatar{font-size:1.9rem;flex-shrink:0}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-weight:800;font-size:.98rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-sub{color:var(--muted);font-size:.8rem}
+.lb-pts{font-size:1.35rem;font-weight:800;color:var(--primary);flex-shrink:0}
+
+/* ===== AVATAR / OUTFIT / COLOR PICKERS ===== */
+.avatar-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.av-opt{font-size:1.9rem;cursor:pointer;padding:6px 8px;border-radius:10px;border:2px solid transparent;background:var(--surface-alt);transition:all .15s;user-select:none}
+.av-opt:hover{border-color:var(--line-strong)}
+.av-opt.sel{border-color:var(--primary);background:var(--primary-soft)}
+.outfit-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.out-opt{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:10px;border:2px solid var(--line);background:var(--surface-alt);cursor:pointer;font-size:.86rem;font-weight:700;transition:all .15s;user-select:none}
+.out-opt:hover{border-color:var(--primary)}
+.out-opt.sel{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
+.color-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.col-opt{width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s}
+.col-opt.sel{border-color:var(--surface);transform:scale(1.2);box-shadow:0 0 0 2px var(--primary)}
+
+.char-preview{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px;border-radius:14px;background:var(--surface-alt);border:2px solid var(--line-strong);
+  margin-bottom:16px;transition:border-color .2s;
+}
+.char-badge{position:relative;display:inline-flex;align-items:center;justify-content:center;width:62px;height:62px;border-radius:16px;font-size:2.3rem;border:2px solid;flex-shrink:0}
+.char-outfit{position:absolute;bottom:-6px;right:-8px;font-size:1.3rem;background:var(--surface);border-radius:50%;padding:2px 4px;border:1px solid var(--line-strong);line-height:1}
+
+/* ===== RACE TRACK ===== */
+.race-track{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:16px;box-shadow:var(--shadow)}
+.race-lane{position:relative;height:36px;background:var(--surface-alt);border-radius:99px;margin-bottom:8px;overflow:hidden;border:1px solid var(--line);display:flex;align-items:center;padding:0 12px}
+.race-lane:last-child{margin-bottom:0}
+.race-fill{position:absolute;left:0;top:0;bottom:0;opacity:.2;border-radius:99px;transition:width .4s ease}
+.race-runner{position:relative;z-index:1;display:flex;align-items:center;gap:6px;font-size:.88rem;font-weight:800;transition:margin-left .4s ease;white-space:nowrap}
+.race-score{margin-left:auto;position:relative;z-index:1;font-size:.84rem;font-weight:800;color:var(--primary)}
+
+/* ===== PODIUM ===== */
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:16px 0 22px;flex-wrap:wrap}
+.pod-col{flex:1;min-width:100px;max-width:160px;text-align:center;background:var(--surface-alt);border:2px solid var(--line);border-radius:14px;padding:14px 8px}
+.pod-1{border-color:#ffcd1f;background:linear-gradient(180deg,rgba(255,205,31,.2),var(--surface));transform:translateY(-8px)}
+.pod-2{border-color:#94a3b8;background:linear-gradient(180deg,rgba(148,163,184,.16),var(--surface))}
+.pod-3{border-color:#f97316;background:linear-gradient(180deg,rgba(249,115,22,.16),var(--surface))}
+
+/* ===== STUDENT CHIP ===== */
+.s-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:99px;
+  background:var(--surface-alt);border:1.5px solid;
+  margin:4px;font-size:.88rem;font-weight:700;
+}
+
+/* ===== PROGRESS BAR ===== */
+.prog-bar-wrap{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:8px;width:100%}
+.prog-bar{height:100%;background:var(--primary);border-radius:99px;transition:width .4s}
+
+/* ===== GAME HEADER ===== */
+.g-header{
+  width:100%;max-width:860px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px;background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;margin-bottom:16px;box-shadow:var(--shadow);
+  flex-wrap:wrap;gap:10px;
+}
+
+/* ===== Q BOX ===== */
+.q-box{
+  width:100%;max-width:860px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:var(--shadow);
+}
+.q-text{font-size:1.35rem;font-weight:800;line-height:1.4;text-align:center;margin-bottom:6px}
+.q-label{color:var(--primary);font-weight:800;font-size:.88rem;margin-bottom:8px;text-align:center}
+
+/* ===== FEEDBACK BOX ===== */
+.feedback{text-align:center;padding:20px 14px}
+.feedback .ficon{font-size:4rem;display:block;margin-bottom:8px}
+.feedback .ftitle{font-size:1.6rem;font-weight:800;margin-bottom:4px}
+.feedback .fpts{font-size:2.4rem;font-weight:800;color:var(--primary);margin-bottom:6px}
+.feedback .fcorrect{color:var(--muted);font-size:.95rem}
+
+/* ===== LIVE STATS ===== */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:860px;margin-bottom:16px}
+.stat-box{text-align:center;padding:14px 8px;background:var(--surface);border-radius:12px;border:1px solid var(--line);box-shadow:var(--shadow)}
+.stat-box .snum{font-size:2rem;font-weight:800}
+.stat-box .slbl{color:var(--muted);font-size:.8rem;margin-top:2px;font-weight:600}
+
+/* ===== SETUP STEPS ===== */
+.setup-ol{margin:14px 0;padding-left:20px}
+.setup-ol li{margin-bottom:8px;color:var(--muted);line-height:1.5}
+.setup-ol li strong{color:var(--text)}
+
+/* ===== TOAST ===== */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  padding:12px 22px;border-radius:12px;font-weight:700;z-index:9999;color:#fff;
+  opacity:0;transition:opacity .22s;pointer-events:none;white-space:nowrap;
+  font-size:.95rem;box-shadow:0 6px 24px rgba(0,0,0,.22);
+}
+#toast.show{opacity:1}
+
+/* ===== MISC ===== */
+.sep{border:none;border-top:1px solid var(--line);margin:18px 0}
+.hero-icon{font-size:4.2rem;text-align:center;display:block;margin-bottom:10px}
+.big-num{font-size:3.2rem;font-weight:800;color:var(--primary);line-height:1}
+.back-btn{align-self:flex-start;margin-bottom:14px}
+.qr-wrap{background:#fff;padding:14px;border-radius:14px;border:1px solid var(--line);display:inline-block;margin-bottom:10px}
+.qr-wrap canvas,#qr-box img{display:block}
+.pulse{animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ===== Q-EDITOR (Quizlet Set Builder) ===== */
+.qe-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.qe-num{color:var(--primary);font-weight:800;font-size:.88rem;margin-bottom:10px}
+.opt-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.opt-row .opt-lbl{font-weight:800;width:24px;text-align:center;flex-shrink:0}
+.opt-row input{margin:0;flex:1}
+
+/* ===== LANDING HERO ===== */
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;max-width:900px;width:100%;align-items:center;margin-top:20px}
+.feat-item{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.feat-ico{width:38px;height:38px;border-radius:10px;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+@media(max-width:720px){
+  .hero-grid{grid-template-columns:1fr}
+}
+@media(max-width:460px){
+  h1{font-size:1.65rem}
+  .ans-grid{grid-template-columns:1fr}
+  .q-text{font-size:1.15rem}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Асуулт хариулт</h1>
-  <p class="sub">Асуултаа тавь, бусад хариулна.</p>
+<div id="toast"></div>
 
-  <div class="box">
-    <input id="qTitle" placeholder="Асуултын гарчиг" maxlength="150">
-    <textarea id="qBody" placeholder="Дэлгэрэнгүй тайлбар (заавал биш)"></textarea>
-    <input id="qAuthor" placeholder="Таны нэр" maxlength="40">
-    <button class="primary" id="addQ">Асуулт нэмэх</button>
+<!-- ══════════════════════════════════════════════════
+     TOP NAVBAR
+══════════════════════════════════════════════════ -->
+<header class="navbar">
+  <div class="brand" onclick="navHome()">
+    <div class="brand-logo">Q</div>
+    <span>QuizRace</span>
+  </div>
+  <div class="nav-actions">
+    <button class="btn btn-sm" id="theme-btn" onclick="toggleTheme()">🌙 Харанхуй</button>
+    <button class="btn btn-sm" id="nav-setup-btn" onclick="showView('v-setup')" style="display:none">⚙️ Firebase</button>
+    <button class="btn btn-sm btn-primary" id="nav-login-btn" onclick="showView('v-auth')" style="display:none">Нэвтрэх</button>
+    <button class="btn btn-sm" id="nav-logout-btn" onclick="doLogout()" style="display:none">🚪 Гарах</button>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════
+     SETUP VIEW — Firebase тохиргоо
+══════════════════════════════════════════════════ -->
+<div id="v-setup" class="view">
+  <div class="card" style="max-width:580px;margin-top:24px">
+    <span class="hero-icon">🔧</span>
+    <h2 class="center">Firebase тохиргоо</h2>
+    <p class="muted center" style="margin-bottom:14px">Нэг удаа тохируулахад хангалттай. Дараа нь автоматаар хадгалагдана.</p>
+    <ol class="setup-ol">
+      <li>Браузерт <strong>console.firebase.google.com</strong> нээ</li>
+      <li>"<strong>Add project</strong>" → шинэ project нэр өг → үүсгэ</li>
+      <li>Project-доо <strong>&lt;/&gt;</strong> (Web) дарж app нэм</li>
+      <li><strong>Authentication</strong> → Sign-in method → <strong>Email/Password</strong> идэвхжүүл</li>
+      <li><strong>Realtime Database</strong> → Create database → <strong>Test mode</strong> → сонго</li>
+      <li>⚙️ Project Settings → <strong>Firebase SDK snippet</strong> → "Config" → хуулж доор тавь</li>
+    </ol>
+    <label>Firebase Config (JSON)</label>
+    <textarea id="fbConfig" placeholder='{"apiKey":"AIza...","authDomain":"xxx.firebaseapp.com","databaseURL":"https://xxx-default-rtdb.firebaseio.com","projectId":"xxx","storageBucket":"xxx.appspot.com","messagingSenderId":"111","appId":"1:111:web:aaa"}' style="min-height:120px;font-size:.82rem;font-family:monospace"></textarea>
+    <button class="btn btn-primary btn-full btn-lg" onclick="setupFirebase()">✅ Хадгалаад эхлэх</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     LANDING (Quizlet-inspired)
+══════════════════════════════════════════════════ -->
+<div id="v-landing" class="view">
+  <div class="hero-grid">
+    <div>
+      <span class="badge badge-blue" style="margin-bottom:12px">⚡ Quizlet Live хэв маягийн уралдаан</span>
+      <h1>Асуултаа бэлдээд<br>шууд уралдацгаая!</h1>
+      <p class="muted" style="margin-bottom:22px;font-size:1.02rem">
+        Багш 10, 15, 20 эсвэл 25 асуулттай багц үүсгэж, QR кодоор 40 хүртэлх суралцагчийг 60 секундын хурдны уралдаанд оролцуулна.
+      </p>
+      <div class="btn-group">
+        <button class="btn btn-primary btn-lg" onclick="switchTab('login');showView('v-auth')">👩‍🏫 Багшаар нэвтрэх</button>
+        <button class="btn btn-lg" onclick="switchTab('reg');showView('v-auth')">📝 Бүртгүүлэх</button>
+      </div>
+    </div>
+    <div class="card" style="margin:0">
+      <h3 style="margin-bottom:14px">Хэрхэн ажилладаг вэ?</h3>
+      <div class="feat-item">
+        <div class="feat-ico">📚</div>
+        <div><strong>10–25 асуулттай багц</strong><div class="muted" style="font-size:.85rem">Багш асуултаа оруулж хадгална</div></div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-ico">📱</div>
+        <div><strong>QR кодоор 40 хүн</strong><div class="muted" style="font-size:.85rem">Хүүхдүүд нэр, дүр, хувцсаа сонгоод нэгдэнэ</div></div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-ico">⏱️</div>
+        <div><strong>60 секунд = Оноо</strong><div class="muted" style="font-size:.85rem">Зөв хариулсан үлдсэн секундийн тоогоор оноо авна (34сек = 34 оноо)</div></div>
+      </div>
+      <div class="feat-item" style="margin-bottom:0">
+        <div class="feat-ico">🏆</div>
+        <div><strong>Байр эзлүүлэлт</strong><div class="muted" style="font-size:.85rem">Төгсгөлд нь оноогоор нь 1, 2, 3-р байр шалгаруулна</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     AUTH — Багш нэвтрэх / бүртгүүлэх
+══════════════════════════════════════════════════ -->
+<div id="v-auth" class="view">
+  <button class="btn btn-sm back-btn" onclick="showView('v-landing')">← Буцах</button>
+  <div class="card">
+    <h2 class="center">Багшийн хэсэг</h2>
+    <div class="tabs">
+      <div class="tab active" id="tab-login" onclick="switchTab('login')">Нэвтрэх</div>
+      <div class="tab" id="tab-reg" onclick="switchTab('reg')">Бүртгүүлэх</div>
+    </div>
+    <div id="auth-login">
+      <label>И-мэйл</label>
+      <input id="l-email" type="email" placeholder="bagsh@school.mn">
+      <label>Нууц үг</label>
+      <input id="l-pass" type="password" placeholder="••••••••">
+      <button class="btn btn-primary btn-full btn-lg" onclick="doLogin()">Нэвтрэх →</button>
+    </div>
+    <div id="auth-reg" style="display:none">
+      <label>Таны нэр</label>
+      <input id="r-name" placeholder="Дорж багш">
+      <label>И-мэйл</label>
+      <input id="r-email" type="email" placeholder="bagsh@school.mn">
+      <label>Нууц үг (хамгийн багадаа 6 тэмдэгт)</label>
+      <input id="r-pass" type="password" placeholder="••••••••">
+      <button class="btn btn-primary btn-full btn-lg" onclick="doRegister()">Бүртгүүлэх →</button>
+    </div>
+    <p id="auth-err" style="color:var(--danger);text-align:center;display:none;margin-top:6px;font-weight:600"></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     DASHBOARD — Багшийн нүүр (Quizlet Study Sets)
+══════════════════════════════════════════════════ -->
+<div id="v-dashboard" class="view">
+  <div style="width:100%;max-width:900px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <h2 style="margin:0">📚 Миний асуултын багцууд</h2>
+        <p class="muted" style="font-size:.9rem;margin:2px 0 0" id="dash-welcome"></p>
+      </div>
+      <button class="btn btn-primary" onclick="openEditor(null)">➕ Шинэ багц үүсгэх</button>
+    </div>
+    <div id="set-list" class="set-grid"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     EDITOR — Асуулт багц засах
+══════════════════════════════════════════════════ -->
+<div id="v-editor" class="view">
+  <div style="width:100%;max-width:860px">
+    <button class="btn btn-sm back-btn" onclick="goToDash()">← Буцах</button>
+    <div class="card wide full">
+      <h2>✏️ Шинэ багц бэлдэх</h2>
+      <label>Багцын нэр</label>
+      <input id="set-title" placeholder="жишээ: 7А анги — Математик">
+      <label>Асуултын тоо</label>
+      <div class="btn-group" id="cnt-btns" style="margin-bottom:8px">
+        <button class="btn" id="cnt-10" onclick="setQCount(10)">10 асуулт</button>
+        <button class="btn" id="cnt-15" onclick="setQCount(15)">15 асуулт</button>
+        <button class="btn" id="cnt-20" onclick="setQCount(20)">20 асуулт</button>
+        <button class="btn" id="cnt-25" onclick="setQCount(25)">25 асуулт</button>
+      </div>
+    </div>
+    <div id="q-editor-list"></div>
+    <button class="btn btn-success btn-full btn-lg" style="max-width:860px;margin-top:8px" onclick="saveSet()">💾 Багц хадгалах</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     LOBBY — QR, хүлээлгийн өрөө
+══════════════════════════════════════════════════ -->
+<div id="v-lobby" class="view">
+  <div style="width:100%;max-width:900px">
+    <button class="btn btn-sm back-btn" onclick="closeLobby()">← Уралдаан цуцлах</button>
+    <div class="card wide full">
+      <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:0 0 auto;text-align:center">
+          <h3>📱 QR код уншина уу</h3>
+          <div class="qr-wrap" id="qr-box"></div>
+          <p class="muted" style="font-size:.75rem;margin-bottom:8px;max-width:220px;word-break:break-all" id="join-url-txt"></p>
+          <span id="s-count-badge" class="badge badge-blue">0 / 40 суралцагч</span>
+        </div>
+        <div style="flex:1;min-width:240px">
+          <h3 style="margin-bottom:10px">🎮 Нэвтэрсэн суралцагчид</h3>
+          <div id="lobby-students" style="max-height:280px;overflow-y:auto;margin-bottom:14px">
+            <p class="muted" id="lobby-empty">Суралцагч хүлээж байна...</p>
+          </div>
+          <div class="sep"></div>
+          <button class="btn btn-success btn-full btn-lg" id="start-btn" onclick="startGame()" disabled>
+            🚀 Уралдаан эхлүүлэх
+          </button>
+          <p class="muted center" style="font-size:.85rem" id="start-hint">Дор хаяж 1 суралцагч нэвтэрсний дараа эхлүүлж болно</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     TEACHER GAME VIEW
+══════════════════════════════════════════════════ -->
+<div id="v-tgame" class="view">
+  <div class="g-header">
+    <div style="min-width:150px">
+      <div class="q-label" id="tg-qlabel" style="text-align:left;margin-bottom:4px">1-р асуулт</div>
+      <div class="prog-bar-wrap"><div class="prog-bar" id="tg-prog" style="width:10%"></div></div>
+      <span id="tg-answered" class="badge badge-blue">0 хариулсан</span>
+    </div>
+    <div class="timer-wrap" id="tg-timer-wrap">
+      <svg width="88" height="88" viewBox="0 0 90 90">
+        <circle class="t-track" cx="45" cy="45" r="38" stroke-width="8"/>
+        <circle class="t-prog" id="tg-ring" cx="45" cy="45" r="38" stroke-width="8"
+          stroke-dasharray="238.8" stroke-dashoffset="0" stroke="#23b26d"/>
+      </svg>
+      <span class="t-num" id="tg-time" style="font-size:1.75rem;color:#23b26d">60</span>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-warning" id="tg-next-btn" onclick="nextQuestion()">Дараагийн →</button>
+    </div>
   </div>
 
-  <input class="search" id="search" placeholder="Асуулт хайх...">
-  <div id="list"></div>
+  <div class="q-box">
+    <p class="q-label" id="tg-qlabel2"></p>
+    <p class="q-text" id="tg-qtext">...</p>
+    <div class="ans-grid" id="tg-options"></div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="snum" id="tg-ncorrect" style="color:var(--success)">0</div><div class="slbl">✅ Зөв</div></div>
+    <div class="stat-box"><div class="snum" id="tg-nwrong" style="color:var(--danger)">0</div><div class="slbl">❌ Буруу</div></div>
+    <div class="stat-box"><div class="snum" id="tg-nnone" style="color:var(--muted)">0</div><div class="slbl">⏳ Хариуллаагүй</div></div>
+  </div>
+
+  <div style="width:100%;max-width:860px">
+    <h3>🏎️ Уралдааны зам (Топ 5)</h3>
+    <div class="race-track" id="tg-race-track"></div>
+    <h3>🏆 Онооны самбар</h3>
+    <div id="tg-mini-lb"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     TEACHER RESULTS
+══════════════════════════════════════════════════ -->
+<div id="v-tresults" class="view">
+  <div class="card wide">
+    <h2 class="center">🏆 Эцсийн дүн — Байр эзлүүлэлт</h2>
+    <div id="t-final-lb"></div>
+    <div class="sep"></div>
+    <button class="btn btn-primary btn-full btn-lg" onclick="goToDash()">📚 Багцууд руу буцах</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STUDENT JOIN
+══════════════════════════════════════════════════ -->
+<div id="v-sjoin" class="view">
+  <div class="card" style="max-width:460px;margin-top:12px">
+    <h2 class="center" style="margin-bottom:14px">🎮 Уралдаанд нэгдэх</h2>
+    <div class="char-preview" id="char-preview">
+      <div class="char-badge" id="pv-badge" style="border-color:#4255ff;background:#4255ff20">
+        <span id="pv-av">🦁</span>
+        <span class="char-outfit" id="pv-out">👕</span>
+      </div>
+      <div>
+        <div id="pv-name" style="font-weight:800;font-size:1.1rem;color:#4255ff">Тоглогч</div>
+        <div class="muted" style="font-size:.82rem" id="pv-out-lbl">Футболка</div>
+      </div>
+    </div>
+    <label>Таны нэр (20 тэмдэгт)</label>
+    <input id="s-name" placeholder="Нэрээ бич..." maxlength="20" oninput="updatePreview()">
+    <label>Дүр сонго</label>
+    <div class="avatar-grid" id="av-grid"></div>
+    <label>Хувцас / Гоёл сонго</label>
+    <div class="outfit-grid" id="out-grid"></div>
+    <label>Өнгө сонго</label>
+    <div class="color-grid" id="col-grid"></div>
+    <button class="btn btn-primary btn-full btn-lg" onclick="studentJoin()">✅ Нэгдэх</button>
+    <p id="sjoin-err" style="color:var(--danger);text-align:center;display:none;margin-top:4px;font-weight:600"></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STUDENT WAITING
+══════════════════════════════════════════════════ -->
+<div id="v-swait" class="view" style="justify-content:center">
+  <div class="card center" style="max-width:420px">
+    <div id="sw-avatar" style="font-size:4.5rem;margin-bottom:8px">🦁👕</div>
+    <h2 id="sw-name">Нэр</h2>
+    <p class="muted">Багш уралдааныг эхлүүлэхийг хүлээж байна...</p>
+    <div style="margin-top:16px">
+      <span id="sw-cnt" class="badge badge-blue">? суралцагч нэгдсэн</span>
+    </div>
+    <div style="font-size:2rem;margin-top:22px" class="pulse">⏳</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STUDENT GAME
+══════════════════════════════════════════════════ -->
+<div id="v-sgame" class="view">
+  <div class="g-header" style="max-width:540px">
+    <span id="sg-qnum" class="badge badge-blue">1 / 10</span>
+    <div class="timer-wrap">
+      <svg width="102" height="102" viewBox="0 0 110 110">
+        <circle class="t-track" cx="55" cy="55" r="46" stroke-width="9"/>
+        <circle class="t-prog" id="sg-ring" cx="55" cy="55" r="46" stroke-width="9"
+          stroke-dasharray="289.0" stroke-dashoffset="0" stroke="#23b26d"/>
+      </svg>
+      <span class="t-num" id="sg-time" style="font-size:2rem;color:#23b26d">60</span>
+    </div>
+    <span id="sg-score" class="badge badge-gold" style="font-size:.9rem">0 оноо</span>
+  </div>
+
+  <div class="q-box" style="max-width:540px" id="sg-q-box">
+    <p class="q-label" id="sg-qlabel"></p>
+    <p class="q-text" id="sg-qtext">...</p>
+    <div class="ans-grid" id="sg-options"></div>
+  </div>
+
+  <div id="sg-feedback" class="card" style="max-width:540px;display:none">
+    <div class="feedback">
+      <span class="ficon" id="sf-icon">✅</span>
+      <div class="ftitle" id="sf-title">Зөв!</div>
+      <div class="fpts" id="sf-pts">+34 оноо</div>
+      <p class="fcorrect" id="sf-correct"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STUDENT RESULTS
+══════════════════════════════════════════════════ -->
+<div id="v-sresults" class="view">
+  <div class="card center" style="max-width:460px;margin-top:12px">
+    <div id="sr-avatar" style="font-size:4rem;margin-bottom:8px">🏆</div>
+    <h2 id="sr-name">Нэр</h2>
+    <div class="big-num" id="sr-score" style="margin:10px 0">0</div>
+    <p class="muted">нийт оноо</p>
+    <div id="sr-rank" class="badge badge-green" style="font-size:1rem;margin-top:10px">🥇 1-р байр</div>
+  </div>
+  <div class="card wide">
+    <h3>🏆 Нийт дүн</h3>
+    <div id="sr-lb"></div>
+  </div>
 </div>
 
 <script>
-  const KEY = "qa-data-v1";
-  let questions = load();
+const AVATARS = ['🦁','🐯','🦊','🐺','🐻','🐼','🐨','🐸','🦋','🦄','🐬','🦅','🐉','🤖','👾','🐙','🦑','🐥','🦉','🦚','🐓','🕊️','🐇','🦝','🦨','🦡','🐧'];
+const OUTFITS = [
+  {icon:'👕', label:'Футболка'},
+  {icon:'🧥', label:'Хүрэм'},
+  {icon:'👔', label:'Костюм'},
+  {icon:'👗', label:'Даашинз'},
+  {icon:'🥋', label:'Кимоно'},
+  {icon:'🦸', label:'Нөмрөг'},
+  {icon:'🎓', label:'Малгай'},
+  {icon:'👑', label:'Титэм'},
+  {icon:'🕶️', label:'Шил'},
+  {icon:'🎒', label:'Цүнх'}
+];
+const COLORS  = ['#4255ff','#ff725b','#ff9c1a','#23b26d','#06b6d4','#8b5cf6','#ec4899','#eab308'];
+const MEDALS  = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
+const ANS_LBL = ['A','B','C','D'];
 
-  function load() {
+let db = null, auth = null;
+let currentUser = null;
+let sessionId   = null;
+let studentId   = null;
+let myAvatar    = AVATARS[0];
+let myOutfit    = OUTFITS[0].icon;
+let myColor     = COLORS[0];
+let editSetId   = null;
+let qCount      = 10;
+let editQs      = [];
+let currentSession = null;
+let answered    = false;
+let myScore     = 0;
+let lastQIdx    = -1;
+let timerIv     = null;
+let sessRef  = null, sessCb  = null;
+let lobRef   = null, lobCb   = null;
+
+/* ── THEME ── */
+function applyTheme(dark) {
+  document.body.classList.toggle('dark', dark);
+  ge('theme-btn').textContent = dark ? '☀️ Цайвар' : '🌙 Харанхуй';
+}
+function toggleTheme() {
+  const next = !document.body.classList.contains('dark');
+  localStorage.setItem('qr-theme', next ? 'dark' : 'light');
+  applyTheme(next);
+}
+
+/* ── FIREBASE SETUP ── */
+function setupFirebase() {
+  const raw = ge('fbConfig').value.trim();
+  try {
+    const cfg = JSON.parse(raw);
+    if (!cfg.apiKey)      throw new Error('apiKey байхгүй');
+    if (!cfg.databaseURL) throw new Error('databaseURL байхгүй — Realtime Database идэвхжүүлснийхаа дараа шинэчил');
+    localStorage.setItem('fb-cfg', JSON.stringify(cfg));
+    initFB(cfg);
+  } catch(e) { alert('⚠️ Алдаа: ' + e.message); }
+}
+
+function initFB(cfg) {
+  if (!firebase.apps.length) firebase.initializeApp(cfg);
+  db   = firebase.database();
+  auth = firebase.auth();
+  auth.onAuthStateChanged(u => {
+    currentUser = u;
+    updateNav();
+    if (u && !sessionId) { loadDashboard(); showView('v-dashboard'); }
+    else if (!u && !sessionId) showView('v-landing');
+  });
+}
+
+function updateNav() {
+  const isStudent = Boolean(new URLSearchParams(location.search).get('join'));
+  ge('nav-setup-btn').style.display  = isStudent ? 'none' : '';
+  ge('nav-login-btn').style.display  = (!isStudent && !currentUser) ? '' : 'none';
+  ge('nav-logout-btn').style.display = (!isStudent && currentUser)  ? '' : 'none';
+}
+
+function navHome() {
+  if (sessionId && new URLSearchParams(location.search).get('join')) return;
+  if (currentUser) goToDash();
+  else showView('v-landing');
+}
+
+function init() {
+  applyTheme(localStorage.getItem('qr-theme') === 'dark');
+  const p = new URLSearchParams(location.search);
+  const jid = p.get('join');
+  const cfg64 = p.get('cfg');
+
+  if (jid && cfg64) {
     try {
-      const raw = localStorage.getItem(KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+      const cfg = JSON.parse(atob(decodeURIComponent(cfg64)));
+      initFB(cfg);
+      sessionId = jid;
+      updateNav();
+      studentId = sessionStorage.getItem('sid') || null;
+      if (studentId) rejoinAsStudent();
+      else { buildJoinView(); showView('v-sjoin'); }
+    } catch(e) { alert('QR алдаатай'); showView('v-landing'); }
+    return;
   }
-  function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(questions)); } catch (e) {}
+
+  updateNav();
+  const saved = localStorage.getItem('fb-cfg');
+  if (!saved) { showView('v-setup'); return; }
+  try { initFB(JSON.parse(saved)); showView('v-landing'); }
+  catch(e) { showView('v-setup'); }
+}
+
+/* ── VIEW & TABS ── */
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  ge(id).classList.add('active');
+}
+function switchTab(t) {
+  ['login','reg'].forEach(x => {
+    ge('auth-'+x).style.display = x===t ? '' : 'none';
+    ge('tab-'+x).classList.toggle('active', x===t);
+  });
+  ge('auth-err').style.display='none';
+}
+
+/* ── TOAST ── */
+function toast(msg, col='#23b26d') {
+  const el = ge('toast');
+  el.textContent = msg; el.style.background = col;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ── TEACHER AUTH ── */
+async function doRegister() {
+  const name = v('r-name'), email = v('r-email'), pass = v('r-pass');
+  const err = ge('auth-err');
+  if (!name||!email||!pass) { showErr(err,'Бүх талбарыг бөглөнэ үү'); return; }
+  try {
+    err.style.display='none';
+    const c = await auth.createUserWithEmailAndPassword(email, pass);
+    await db.ref(`teachers/${c.user.uid}`).set({ name, email, at: Date.now() });
+    toast('Бүртгэл амжилттай! 🎉');
+  } catch(e) { showErr(err, fbErr(e)); }
+}
+
+async function doLogin() {
+  const email = v('l-email'), pass = v('l-pass');
+  const err = ge('auth-err');
+  if (!email||!pass) { showErr(err,'И-мэйл болон нууц үгийг бөглөнэ үү'); return; }
+  try {
+    err.style.display='none';
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch(e) { showErr(err, fbErr(e)); }
+}
+
+async function doLogout() {
+  clearAll();
+  await auth.signOut();
+  showView('v-landing');
+}
+
+function fbErr(e) {
+  const m = {
+    'auth/user-not-found':'И-мэйл бүртгэлгүй',
+    'auth/wrong-password':'Нууц үг буруу',
+    'auth/invalid-credential':'И-мэйл эсвэл нууц үг буруу',
+    'auth/email-already-in-use':'И-мэйл аль хэдийн бүртгэлтэй',
+    'auth/weak-password':'Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой',
+    'auth/invalid-email':'И-мэйл буруу форматтай',
+  };
+  return m[e.code] || e.message;
+}
+
+/* ── DASHBOARD ── */
+async function loadDashboard() {
+  if (!currentUser) return;
+  const tSnap = await db.ref(`teachers/${currentUser.uid}/name`).get();
+  ge('dash-welcome').textContent = `Сайн байна уу, ${tSnap.val()||'багш'} 👋`;
+
+  const snap = await db.ref(`teachers/${currentUser.uid}/sets`).get();
+  const sets = snap.val() || {};
+  const list = ge('set-list');
+  const entries = Object.entries(sets).sort((a,b)=>b[1].at-a[1].at);
+
+  if (!entries.length) {
+    list.innerHTML = '<div class="card full center" style="grid-column:1/-1"><p class="muted" style="padding:20px 0">Одоогоор багц байхгүй. «Шинэ багц үүсгэх» дарж нэмнэ үү!</p></div>';
+    return;
   }
-  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  }
-  function fmt(ts) { return new Date(ts).toLocaleString("mn-MN"); }
-
-  function render() {
-    const term = document.getElementById("search").value.trim().toLowerCase();
-    const list = document.getElementById("list");
-    const items = questions.filter(q =>
-      !term || (q.title + " " + q.body).toLowerCase().includes(term));
-
-    if (!items.length) {
-      list.innerHTML = '<div class="empty">Асуулт алга байна. Эхний асуултаа нэм!</div>';
-      return;
-    }
-
-    list.innerHTML = items.map(q => `
-      <div class="box" data-id="${q.id}">
-        <p class="q-title">${esc(q.title)}</p>
-        <div class="meta">${esc(q.author)} · ${fmt(q.time)} · ${q.answers.length} хариулт</div>
-        ${q.body ? `<p style="white-space:pre-wrap;margin:0 0 8px">${esc(q.body)}</p>` : ""}
-        <div class="actions">
-          <button class="small" data-act="toggle">Хариулах / харах</button>
-          <button class="small" data-act="delQ">Устгах</button>
+  list.innerHTML = entries.map(([id,s])=>`
+    <div class="set-card">
+      <div>
+        <div class="set-card-title">${esc(s.title)}</div>
+        <div class="set-card-meta">
+          <span class="badge badge-blue">${s.count} асуулт</span>
+          <span>${new Date(s.at).toLocaleDateString('mn-MN')}</span>
         </div>
-        <div class="answers" hidden>
-          ${q.answers.map(a => `
-            <div class="answer" data-aid="${a.id}">
-              <p>${esc(a.text)}</p>
-              <div class="meta">${esc(a.author)} · ${fmt(a.time)}
-                <button class="small" data-act="delA">Устгах</button></div>
-            </div>`).join("") || '<div class="meta">Хариулт хараахан алга.</div>'}
-          <input placeholder="Таны нэр" class="aAuthor" maxlength="40">
-          <textarea placeholder="Хариултаа бич..." class="aText"></textarea>
-          <button class="primary small" data-act="addA">Хариулт илгээх</button>
-        </div>
-      </div>`).join("");
-  }
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary btn-sm" style="flex:1" onclick="startSession('${id}')">▶️ Уралдаан</button>
+        <button class="btn btn-sm" onclick="openEditor('${id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="delSet('${id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
 
-  document.getElementById("addQ").addEventListener("click", () => {
-    const title = document.getElementById("qTitle").value.trim();
-    if (!title) { alert("Асуултын гарчиг бичнэ үү."); return; }
-    questions.unshift({
-      id: uid(),
-      title,
-      body: document.getElementById("qBody").value.trim(),
-      author: document.getElementById("qAuthor").value.trim() || "Нэргүй",
-      time: Date.now(),
-      answers: []
+function goToDash() { clearAll(); sessionId = null; loadDashboard(); showView('v-dashboard'); }
+
+async function delSet(id) {
+  if (!confirm('Энэ багцыг устгах уу?')) return;
+  await db.ref(`teachers/${currentUser.uid}/sets/${id}`).remove();
+  loadDashboard(); toast('Устгасан','#ff725b');
+}
+
+/* ── EDITOR ── */
+function openEditor(setId) {
+  editSetId = setId; editQs = []; qCount = 10;
+  ge('set-title').value = '';
+  if (setId) {
+    db.ref(`teachers/${currentUser.uid}/sets/${setId}`).get().then(snap=>{
+      const s = snap.val(); if (!s) return;
+      ge('set-title').value = s.title;
+      qCount = s.count;
+      editQs = JSON.parse(JSON.stringify(s.questions || []));
+      setQCount(qCount, true);
     });
-    save();
-    ["qTitle", "qBody"].forEach(id => document.getElementById(id).value = "");
-    render();
+  } else { setQCount(10, true); }
+  showView('v-editor');
+}
+
+function setQCount(n, skipTrim) {
+  qCount = n;
+  [10,15,20,25].forEach(c => {
+    ge('cnt-'+c).className = c===n ? 'btn btn-primary' : 'btn';
+  });
+  while (editQs.length < n) editQs.push({ text:'', options:['','','',''], correct:0 });
+  if (!skipTrim) editQs = editQs.slice(0,n);
+  renderEditor();
+}
+
+function renderEditor() {
+  ge('q-editor-list').innerHTML = editQs.slice(0,qCount).map((q,i)=>`
+    <div class="qe-card">
+      <div class="qe-num">${i+1}-р асуулт</div>
+      <label>Асуулт</label>
+      <input value="${esc(q.text)}" placeholder="Асуулт бич..." oninput="editQs[${i}].text=this.value">
+      <label style="margin-bottom:8px">Хариултууд (зөв хариултыг сонгоно уу)</label>
+      ${['A','B','C','D'].map((lbl,j)=>`
+        <div class="opt-row">
+          <input type="radio" name="cor${i}" value="${j}" ${q.correct===j?'checked':''} onchange="editQs[${i}].correct=${j}">
+          <span class="opt-lbl" style="color:${['#ff725b','#4255ff','#23b26d','#ff9c1a'][j]}">${lbl}</span>
+          <input value="${esc(q.options[j]||'')}" placeholder="Хариулт ${lbl}..." oninput="editQs[${i}].options[${j}]=this.value" style="margin:0">
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+async function saveSet() {
+  const title = v('set-title');
+  if (!title) { alert('Багцын нэрийг бичнэ үү'); return; }
+  for (let i=0;i<qCount;i++) {
+    const q = editQs[i];
+    if (!q.text.trim()) { alert(`${i+1}-р асуулт хоосон байна`); return; }
+    if (q.options.some(o=>!o.trim())) { alert(`${i+1}-р асуултын бүх хариулт (A,B,C,D) бичнэ үү`); return; }
+  }
+  const id = editSetId || db.ref().push().key;
+  await db.ref(`teachers/${currentUser.uid}/sets/${id}`).set({
+    title, count: qCount, at: Date.now(),
+    questions: editQs.slice(0,qCount)
+  });
+  editSetId = id;
+  toast('Хадгалагдлаа ✅');
+  setTimeout(()=>{ loadDashboard(); showView('v-dashboard'); }, 450);
+}
+
+/* ── SESSION & LOBBY ── */
+async function startSession(setId) {
+  const setSnap = await db.ref(`teachers/${currentUser.uid}/sets/${setId}`).get();
+  const set = setSnap.val();
+  if (!set) { alert('Багц олдсонгүй'); return; }
+  const tNameSnap = await db.ref(`teachers/${currentUser.uid}/name`).get();
+
+  sessionId = db.ref('sessions').push().key;
+  await db.ref(`sessions/${sessionId}`).set({
+    tid: currentUser.uid,
+    tname: tNameSnap.val()||'Багш',
+    status: 'lobby',
+    cq: -1,
+    qst: 0,
+    total: set.count,
+    questions: set.questions,
+    students: {},
+    answers: {},
+    at: Date.now()
+  });
+  openLobby();
+}
+
+function openLobby() {
+  ge('qr-box').innerHTML = '';
+  const rawCfg = JSON.parse(localStorage.getItem('fb-cfg') || '{}');
+  const minCfg = {
+    apiKey: rawCfg.apiKey,
+    authDomain: rawCfg.authDomain,
+    databaseURL: rawCfg.databaseURL,
+    projectId: rawCfg.projectId
+  };
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(minCfg))));
+  const url = `${location.origin}${location.pathname}?join=${sessionId}&cfg=${encodeURIComponent(b64)}`;
+  ge('join-url-txt').textContent = url;
+  try {
+    new QRCode(ge('qr-box'),{ text:url, width:200, height:200,
+      colorDark:'#282e3e', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.L });
+  } catch(e) {}
+
+  clearLob();
+  lobRef = db.ref(`sessions/${sessionId}/students`);
+  lobCb  = snap => {
+    const sts = snap.val()||{};
+    const cnt = Object.keys(sts).length;
+    ge('s-count-badge').textContent = `${cnt} / 40 суралцагч`;
+    ge('start-btn').disabled = cnt===0;
+    ge('start-hint').textContent = cnt===0
+      ? 'Дор хаяж 1 суралцагч нэвтэрсний дараа эхлүүлж болно'
+      : `${cnt} суралцагч бэлэн — эхлүүлж болно`;
+    ge('lobby-empty').style.display = cnt?'none':'';
+    ge('lobby-students').innerHTML = Object.values(sts).map(s=>`
+      <div class="s-chip" style="border-color:${s.color};color:${s.color}">${s.avatar}${s.outfit||''} ${esc(s.name)}</div>
+    `).join('');
+  };
+  lobRef.on('value', lobCb);
+  showView('v-lobby');
+}
+
+function closeLobby() {
+  if (!confirm('Уралдааныг цуцлах уу?')) return;
+  db.ref(`sessions/${sessionId}/status`).set('cancelled');
+  goToDash();
+}
+
+async function startGame() {
+  clearLob();
+  await db.ref(`sessions/${sessionId}`).update({ status:'playing', cq:0, qst:Date.now() });
+  watchTeacherSession();
+  showView('v-tgame');
+}
+
+/* ── TEACHER GAME ── */
+let tLastQ = -1;
+
+function watchTeacherSession() {
+  clearSess();
+  sessRef = db.ref(`sessions/${sessionId}`);
+  sessCb  = snap => {
+    const s = snap.val(); if (!s) return;
+    currentSession = s;
+    if (s.status==='finished') { clearTimers(); renderTResults(s); showView('v-tresults'); return; }
+    if (s.status!=='playing') return;
+    renderTGame(s);
+    if (s.cq !== tLastQ) { tLastQ=s.cq; startTTimer(s.qst); }
+  };
+  sessRef.on('value', sessCb);
+}
+
+function renderTGame(s) {
+  const qi = s.cq, q = s.questions[qi], total=s.total;
+  const sts = s.students||{}, ans=(s.answers&&s.answers[qi])||{};
+  const nSt = Object.keys(sts).length, nAns = Object.keys(ans).length;
+
+  ge('tg-qlabel').textContent   = `${qi+1} / ${total} асуулт`;
+  ge('tg-qlabel2').textContent  = `${qi+1}-р асуулт`;
+  ge('tg-qtext').textContent    = q.text;
+  ge('tg-prog').style.width     = `${(qi+1)/total*100}%`;
+  ge('tg-answered').textContent = `${nAns} / ${nSt} хариулсан`;
+  ge('tg-next-btn').textContent = qi+1 >= total ? '🏁 Дүн харах' : 'Дараагийн →';
+
+  ge('tg-options').innerHTML = q.options.map((opt,i)=>`
+    <div class="ans-btn ans-${ANS_LBL[i]} ${i===q.correct?'teacher-correct':''}" style="pointer-events:none">
+      <span class="lbl">${ANS_LBL[i]}</span> ${esc(opt)}
+    </div>
+  `).join('');
+
+  let cor=0,wr=0;
+  Object.values(ans).forEach(a=>a.correct?cor++:wr++);
+  ge('tg-ncorrect').textContent = cor;
+  ge('tg-nwrong').textContent   = wr;
+  ge('tg-nnone').textContent    = Math.max(0, nSt - nAns);
+
+  const ranked = Object.entries(sts).map(([id,s])=>({...s,id})).sort((a,b)=>b.score-a.score).slice(0,5);
+  const maxPossible = Math.max(60, total * 60);
+  ge('tg-race-track').innerHTML = ranked.map(s=>{
+    const pct = Math.min(82, Math.round((s.score / maxPossible) * 82));
+    return `
+      <div class="race-lane">
+        <div class="race-fill" style="width:${Math.max(6, pct+18)}%;background:${s.color}"></div>
+        <div class="race-runner" style="margin-left:${pct}%;color:${s.color}">
+          <span>${s.avatar}${s.outfit||''}</span>
+          <span>${esc(s.name)}</span>
+        </div>
+        <div class="race-score">${s.score}</div>
+      </div>`;
+  }).join('') || '<p class="muted center">Суралцагч алга</p>';
+
+  ge('tg-mini-lb').innerHTML = ranked.map((s,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank">${MEDALS[i]||(i+1)}</div>
+      <div class="lb-avatar">${s.avatar}${s.outfit||''}</div>
+      <div class="lb-info"><div class="lb-name" style="color:${s.color}">${esc(s.name)}</div></div>
+      <div class="lb-pts">${s.score}</div>
+    </div>
+  `).join('') || '<p class="muted center">Бүртгэлгүй</p>';
+}
+
+function startTTimer(qst) {
+  clearTimers();
+  const circ = 238.8, ring=ge('tg-ring'), tn=ge('tg-time');
+  timerIv = setInterval(()=>{
+    const left = Math.max(0, 60-(Date.now()-qst)/1000);
+    tn.textContent = Math.ceil(left);
+    ring.style.strokeDashoffset = circ*(1-left/60);
+    const col = left>30?'#23b26d':left>15?'#ff9c1a':'#ff725b';
+    ring.style.stroke = col; tn.style.color = col;
+    if (left<=0) clearTimers();
+  },120);
+}
+
+async function nextQuestion() {
+  if (!currentSession) return;
+  const nxt = currentSession.cq+1;
+  if (nxt >= currentSession.total) {
+    await db.ref(`sessions/${sessionId}/status`).set('finished');
+  } else {
+    await db.ref(`sessions/${sessionId}`).update({ cq:nxt, qst:Date.now(), status:'playing' });
+  }
+}
+
+function renderPodium(ranked) {
+  if (!ranked.length) return '';
+  const top = [ranked[1], ranked[0], ranked[2]].filter(Boolean);
+  return `<div class="podium">${top.map(x => {
+    const r = ranked.indexOf(x) + 1;
+    return `
+      <div class="pod-col pod-${r}">
+        <div style="font-size:1.7rem">${MEDALS[r-1]}</div>
+        <div style="font-size:2.3rem;margin:4px 0">${x.avatar}${x.outfit||''}</div>
+        <div style="font-weight:800;color:${x.color};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.name)}</div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--primary);margin-top:4px">${x.score} оноо</div>
+      </div>`;
+  }).join('')}</div>`;
+}
+
+function renderTResults(s) {
+  const sts = s.students||{};
+  const ranked = Object.entries(sts).map(([id,x])=>({...x,id})).sort((a,b)=>b.score-a.score);
+  ge('t-final-lb').innerHTML = ranked.length ? (
+    renderPodium(ranked) +
+    ranked.map((x,i)=>`
+      <div class="lb-row">
+        <div class="lb-rank">${MEDALS[i]||(i+1)}</div>
+        <div class="lb-avatar">${x.avatar}${x.outfit||''}</div>
+        <div class="lb-info">
+          <div class="lb-name" style="color:${x.color}">${esc(x.name)}</div>
+          <div class="lb-sub">${i+1}-р байр · Нийт ${x.score} оноо</div>
+        </div>
+        <div class="lb-pts">${x.score}</div>
+      </div>
+    `).join('')
+  ) : '<p class="muted center">Оролцогч байхгүй байна</p>';
+}
+
+/* ── STUDENT JOIN ── */
+function buildJoinView() {
+  ge('av-grid').innerHTML = AVATARS.map((a,i)=>`
+    <span class="av-opt ${i===0?'sel':''}" onclick="pickAv(this,'${a}')">${a}</span>
+  `).join('');
+  myAvatar = AVATARS[0];
+
+  ge('out-grid').innerHTML = OUTFITS.map((o,i)=>`
+    <span class="out-opt ${i===0?'sel':''}" onclick="pickOut(this,'${o.icon}','${o.label}')">${o.icon} ${o.label}</span>
+  `).join('');
+  myOutfit = OUTFITS[0].icon;
+
+  ge('col-grid').innerHTML = COLORS.map((c,i)=>`
+    <div class="col-opt ${i===0?'sel':''}" style="background:${c}" onclick="pickCol(this,'${c}')"></div>
+  `).join('');
+  myColor = COLORS[0];
+  updatePreview();
+}
+
+function updatePreview() {
+  const name = v('s-name') || 'Тоглогч';
+  ge('pv-av').textContent = myAvatar;
+  ge('pv-out').textContent = myOutfit;
+  ge('pv-name').textContent = name;
+  ge('pv-name').style.color = myColor;
+  ge('pv-badge').style.borderColor = myColor;
+  ge('pv-badge').style.background = myColor + '20';
+  ge('char-preview').style.borderColor = myColor;
+}
+
+function pickAv(el,a){ document.querySelectorAll('.av-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myAvatar=a; updatePreview(); }
+function pickOut(el,o,lbl){ document.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myOutfit=o; ge('pv-out-lbl').textContent=lbl; updatePreview(); }
+function pickCol(el,c){ document.querySelectorAll('.col-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myColor=c; updatePreview(); }
+
+async function studentJoin() {
+  const name = v('s-name');
+  const err  = ge('sjoin-err');
+  if (!name) { showErr(err,'Нэрээ бичнэ үү'); return; }
+  err.style.display='none';
+
+  const snap = await db.ref(`sessions/${sessionId}`).get();
+  const s = snap.val();
+  if (!s) { showErr(err,'Уралдаан олдсонгүй'); return; }
+  if (s.status==='finished'||s.status==='cancelled') { showErr(err,'Уралдаан дууссан байна'); return; }
+
+  const sts = s.students||{};
+  if (Object.keys(sts).length >= 40) { showErr(err,'Уралдаанд 40 хүн дүүрсэн!'); return; }
+
+  studentId = `s${Date.now().toString(36)}${Math.random().toString(36).slice(2,5)}`;
+  sessionStorage.setItem('sid', studentId);
+
+  await db.ref(`sessions/${sessionId}/students/${studentId}`).set({
+    name, avatar:myAvatar, outfit:myOutfit, color:myColor, score:0, at:Date.now()
   });
 
-  document.getElementById("search").addEventListener("input", render);
+  myScore = 0; lastQIdx = -1; answered = false;
+  ge('sw-avatar').textContent = myAvatar + myOutfit;
+  ge('sw-name').textContent   = name;
+  watchStudentSession();
+  showView('v-swait');
+}
 
-  document.getElementById("list").addEventListener("click", e => {
-    const btn = e.target.closest("button");
-    if (!btn) return;
-    const card = btn.closest(".box");
-    const q = questions.find(x => x.id === card.dataset.id);
-    const act = btn.dataset.act;
+/* ── STUDENT GAME ── */
+function watchStudentSession() {
+  clearSess();
+  sessRef = db.ref(`sessions/${sessionId}`);
+  sessCb  = snap => {
+    const s = snap.val(); if (!s) return;
+    currentSession = s;
 
-    if (act === "toggle") {
-      const el = card.querySelector(".answers");
-      el.hidden = !el.hidden;
-    } else if (act === "delQ") {
-      if (confirm("Энэ асуултыг устгах уу?")) {
-        questions = questions.filter(x => x.id !== q.id);
-        save(); render();
-      }
-    } else if (act === "addA") {
-      const text = card.querySelector(".aText").value.trim();
-      if (!text) return;
-      q.answers.push({
-        id: uid(), text,
-        author: card.querySelector(".aAuthor").value.trim() || "Нэргүй",
-        time: Date.now()
+    const cnt = Object.keys(s.students||{}).length;
+    const swc = ge('sw-cnt'); if(swc) swc.textContent = `${cnt} суралцагч нэгдсэн`;
+
+    if (s.status==='playing') { renderStudentGame(s); showView('v-sgame'); }
+    else if (s.status==='finished') { clearTimers(); renderStudentResults(s); showView('v-sresults'); }
+  };
+  sessRef.on('value', sessCb);
+}
+
+function renderStudentGame(s) {
+  const qi = s.cq, q = s.questions[qi];
+  ge('sg-qnum').textContent   = `${qi+1} / ${s.total}`;
+  ge('sg-score').textContent  = `${myScore} оноо`;
+  ge('sg-qlabel').textContent = `${qi+1}-р асуулт`;
+  ge('sg-qtext').textContent  = q.text;
+
+  if (qi !== lastQIdx) {
+    lastQIdx = qi;
+    answered = false;
+    ge('sg-feedback').style.display='none';
+    ge('sg-q-box').style.display='';
+    ge('sg-options').innerHTML = q.options.map((opt,i)=>`
+      <button class="ans-btn ans-${ANS_LBL[i]}" onclick="submitAns(${i})">
+        <span class="lbl">${ANS_LBL[i]}</span> ${esc(opt)}
+      </button>
+    `).join('');
+    startSTimer(s.qst);
+  }
+}
+
+function startSTimer(qst) {
+  clearTimers();
+  const circ=289.0, ring=ge('sg-ring'), tn=ge('sg-time');
+  timerIv = setInterval(()=>{
+    const left=Math.max(0,60-(Date.now()-qst)/1000);
+    tn.textContent=Math.ceil(left);
+    ring.style.strokeDashoffset=circ*(1-left/60);
+    const col=left>30?'#23b26d':left>15?'#ff9c1a':'#ff725b';
+    ring.style.stroke=col; tn.style.color=col;
+    if(left<=0&&!answered){ clearTimers(); showTimeUp(); }
+  },120);
+}
+
+async function submitAns(ai) {
+  if (answered||!currentSession) return;
+  answered=true; clearTimers();
+
+  const qi=currentSession.cq, q=currentSession.questions[qi];
+  const left=Math.max(0,Math.round(60-(Date.now()-currentSession.qst)/1000));
+  const correct=ai===q.correct;
+  const pts=correct?left:0;
+
+  document.querySelectorAll('#sg-options .ans-btn').forEach((b,i)=>{
+    b.disabled=true;
+    if(i===q.correct) b.classList.add('correct');
+    else if(i===ai&&!correct) b.classList.add('wrong');
+    else b.classList.add('dimmed');
+  });
+
+  ge('sf-icon').textContent   = correct?'✅':'❌';
+  ge('sf-title').textContent  = correct?'Зөв хариулт!':'Буруу хариулт';
+  ge('sf-pts').textContent    = correct?`+${pts} оноо`:'0 оноо';
+  ge('sf-correct').textContent= `Зөв хариулт: ${ANS_LBL[q.correct]}. ${q.options[q.correct]}`;
+  ge('sg-feedback').style.display='';
+
+  await db.ref(`sessions/${sessionId}/answers/${qi}/${studentId}`).set({
+    answer:ai, correct, points:pts, time:Date.now()
+  });
+  if (correct) {
+    myScore += pts;
+    await db.ref(`sessions/${sessionId}/students/${studentId}/score`).transaction(x=>(x||0)+pts);
+  }
+  ge('sg-score').textContent = `${myScore} оноо`;
+}
+
+function showTimeUp() {
+  if(answered) return;
+  answered=true;
+  if(!currentSession) return;
+  const q=currentSession.questions[currentSession.cq];
+  document.querySelectorAll('#sg-options .ans-btn').forEach((b,i)=>{
+    b.disabled=true;
+    if(i===q.correct) b.classList.add('correct');
+    else b.classList.add('dimmed');
+  });
+  ge('sf-icon').textContent  ='⏰';
+  ge('sf-title').textContent ='Хугацаа дууслаа!';
+  ge('sf-pts').textContent   ='0 оноо';
+  ge('sf-correct').textContent=`Зөв хариулт: ${ANS_LBL[q.correct]}. ${q.options[q.correct]}`;
+  ge('sg-feedback').style.display='';
+  const qi=currentSession.cq;
+  db.ref(`sessions/${sessionId}/answers/${qi}/${studentId}`).set({
+    answer:-1, correct:false, points:0, time:Date.now()
+  });
+}
+
+function renderStudentResults(s) {
+  const sts=s.students||{};
+  const me=sts[studentId]||{};
+  const ranked=Object.entries(sts).map(([id,x])=>({...x,id})).sort((a,b)=>b.score-a.score);
+  const myRank=ranked.findIndex(x=>x.id===studentId)+1;
+
+  ge('sr-avatar').textContent=(me.avatar||'🏆')+(me.outfit||'');
+  ge('sr-name').textContent  =me.name||'';
+  ge('sr-score').textContent =me.score||0;
+
+  const rEl=ge('sr-rank');
+  rEl.textContent=`${MEDALS[myRank-1]||(myRank+'р')} ${myRank}-р байр`;
+  rEl.className=`badge ${myRank===1?'badge-gold':myRank<=3?'badge-green':'badge-blue'}`;
+
+  ge('sr-lb').innerHTML=renderPodium(ranked)+ranked.map((x,i)=>`
+    <div class="lb-row ${x.id===studentId?'me':''}">
+      <div class="lb-rank">${MEDALS[i]||(i+1)}</div>
+      <div class="lb-avatar">${x.avatar}${x.outfit||''}</div>
+      <div class="lb-info">
+        <div class="lb-name" style="color:${x.color}">${esc(x.name)}${x.id===studentId?' 👈':''}</div>
+      </div>
+      <div class="lb-pts">${x.score}</div>
+    </div>
+  `).join('');
+}
+
+async function rejoinAsStudent() {
+  const snap=await db.ref(`sessions/${sessionId}`).get();
+  const s=snap.val();
+  if (!s) { buildJoinView(); showView('v-sjoin'); return; }
+  const me=(s.students||{})[studentId];
+  if (!me) { buildJoinView(); showView('v-sjoin'); return; }
+
+  myScore=me.score||0; lastQIdx=-1; answered=false;
+  currentSession=s;
+
+  if (s.status==='lobby') {
+    ge('sw-avatar').textContent=me.avatar+(me.outfit||'');
+    ge('sw-name').textContent  =me.name;
+    watchStudentSession(); showView('v-swait');
+  } else if (s.status==='playing') {
+    const qi=s.cq;
+    const myAns=(s.answers&&s.answers[qi]&&s.answers[qi][studentId]);
+    renderStudentGame(s);
+    if (myAns) {
+      answered=true; clearTimers();
+      const q=s.questions[qi];
+      document.querySelectorAll('#sg-options .ans-btn').forEach((b,i)=>{
+        b.disabled=true;
+        if(i===q.correct) b.classList.add('correct');
+        else if(i===myAns.answer&&!myAns.correct) b.classList.add('wrong');
+        else b.classList.add('dimmed');
       });
-      save(); render();
-      const again = document.querySelector(`[data-id="${q.id}"] .answers`);
-      if (again) again.hidden = false;
-    } else if (act === "delA") {
-      const aid = btn.closest(".answer").dataset.aid;
-      q.answers = q.answers.filter(a => a.id !== aid);
-      save(); render();
-      const again = document.querySelector(`[data-id="${q.id}"] .answers`);
-      if (again) again.hidden = false;
+      ge('sf-icon').textContent   = myAns.correct?'✅':(myAns.answer===-1?'⏰':'❌');
+      ge('sf-title').textContent  = myAns.correct?'Зөв хариулт!':(myAns.answer===-1?'Хугацаа дууслаа!':'Буруу хариулт');
+      ge('sf-pts').textContent    = myAns.correct?`+${myAns.points} оноо`:'0 оноо';
+      ge('sf-correct').textContent= `Зөв хариулт: ${ANS_LBL[q.correct]}. ${q.options[q.correct]}`;
+      ge('sg-feedback').style.display='';
     }
-  });
+    watchStudentSession(); showView('v-sgame');
+  } else if (s.status==='finished') {
+    renderStudentResults(s); showView('v-sresults');
+  } else {
+    buildJoinView(); showView('v-sjoin');
+  }
+}
 
-  render();
+function clearTimers() { if(timerIv){clearInterval(timerIv);timerIv=null;} }
+function clearSess()   { if(sessRef&&sessCb){sessRef.off('value',sessCb);sessRef=null;sessCb=null;} }
+function clearLob()    { if(lobRef&&lobCb){lobRef.off('value',lobCb);lobRef=null;lobCb=null;} }
+function clearAll()    { clearTimers();clearSess();clearLob(); }
+
+function ge(id)  { return document.getElementById(id); }
+function v(id)   { return ge(id).value.trim(); }
+function showErr(el,msg){ el.textContent=msg; el.style.display='block'; }
+function esc(s)  {
+  return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+init();
 </script>
 </body>
 </html>
