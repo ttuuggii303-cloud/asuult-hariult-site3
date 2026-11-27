@@ -165,18 +165,25 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
 }
 .worn-char{
   position:relative;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
-  border-radius:16px;border:2px solid transparent;flex-shrink:0;padding:12px 10px 6px;
+  border-radius:16px;border:3px solid transparent;flex-shrink:0;padding:10px 8px 4px;
 }
-.worn-char .wc-hat{position:absolute;top:-8px;left:50%;transform:translateX(-50%);z-index:3;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.22))}
-.worn-char .wc-face{position:relative;z-index:2;line-height:1}
-.worn-char .wc-body{position:relative;z-index:1;margin-top:-9px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.18))}
-.worn-char .wc-prop{position:absolute;right:-6px;bottom:2px;z-index:4;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
-.wc-sm{width:44px;height:48px;padding:6px 4px 2px;border-radius:12px}
-.wc-sm .wc-hat{font-size:.95rem;top:-6px}.wc-sm .wc-face{font-size:1.35rem}.wc-sm .wc-body{font-size:1.15rem;margin-top:-6px}.wc-sm .wc-prop{font-size:.85rem;right:-4px}
-.wc-md{width:64px;height:70px}
-.wc-md .wc-hat{font-size:1.35rem;top:-9px}.wc-md .wc-face{font-size:2rem}.wc-md .wc-body{font-size:1.75rem;margin-top:-8px}.wc-md .wc-prop{font-size:1.15rem;right:-6px}
-.wc-lg{width:88px;height:96px;padding:16px 12px 8px}
-.wc-lg .wc-hat{font-size:1.85rem;top:-11px}.wc-lg .wc-face{font-size:2.75rem}.wc-lg .wc-body{font-size:2.4rem;margin-top:-11px}.wc-lg .wc-prop{font-size:1.5rem;right:-8px}
+.worn-char .human-svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.18))}
+.worn-char .wc-hat{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:4;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.worn-char .wc-body{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);z-index:3;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.22))}
+.worn-char .wc-prop{position:absolute;right:-7px;bottom:2px;z-index:5;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
+.wc-sm{width:46px;height:52px;padding:6px 4px 2px;border-radius:12px}
+.wc-sm .wc-hat{font-size:1rem;top:-7px}.wc-sm .wc-body{font-size:1.35rem;bottom:1px}.wc-sm .wc-prop{font-size:.85rem;right:-5px}
+.wc-md{width:68px;height:76px}
+.wc-md .wc-hat{font-size:1.45rem;top:-10px}.wc-md .wc-body{font-size:2rem;bottom:2px}.wc-md .wc-prop{font-size:1.15rem;right:-6px}
+.wc-lg{width:92px;height:104px;padding:12px 10px 4px}
+.wc-lg .wc-hat{font-size:1.95rem;top:-13px}.wc-lg .wc-body{font-size:2.7rem;bottom:3px}.wc-lg .wc-prop{font-size:1.5rem;right:-8px}
+
+/* ===== CHARACTER FRAMES ===== */
+.frame-solid{border-style:solid!important}
+.frame-gold{border:3px solid #ffd700!important;box-shadow:0 0 12px rgba(255,215,0,.65),inset 0 0 8px rgba(255,215,0,.25)}
+.frame-rainbow{border:3px solid transparent!important;background-image:linear-gradient(var(--surface-alt),var(--surface-alt)),linear-gradient(135deg,#ff4d4d,#ffca28,#26c6da,#7e57c2,#ec407a)!important;background-origin:border-box!important;background-clip:padding-box,border-box!important}
+.frame-sparkle{border:3px dashed #fff!important;box-shadow:0 0 10px rgba(70,23,143,.45)}
+.frame-double{border:4px double!important;box-shadow:0 3px 10px rgba(0,0,0,.15)}
 
 /* ===== RACE TRACK & LEADERBOARD ===== */
 .race-track{background:var(--surface);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
@@ -444,15 +451,15 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
     </div>
     <label>Таны нэр (20 тэмдэгт)</label>
     <input id="s-name" placeholder="Нэрээ бич..." maxlength="20" oninput="updatePreview()">
-    <label>Дүр сонго</label>
-    <div class="avatar-grid" id="av-grid"></div>
     <label>Хувцас өмсгөх</label>
     <div class="outfit-grid" id="out-grid"></div>
-    <label>Малгай / Толгойн чимэглэл</label>
+    <label>Малгай / Толгойн гоёл</label>
     <div class="outfit-grid" id="hat-grid"></div>
     <label>Нэмэлт гоёл / Хэрэгсэл</label>
     <div class="outfit-grid" id="prop-grid"></div>
-    <label>Өнгө сонго</label>
+    <label>Хүрээ сонгох</label>
+    <div class="outfit-grid" id="frame-grid"></div>
+    <label>Өнгө сонгох</label>
     <div class="color-grid" id="col-grid"></div>
     <button class="btn btn-green btn-full btn-lg" id="sjoin-btn" onclick="studentJoin()">✅ Шууд нэгдэх</button>
     <p id="sjoin-err" style="color:var(--k-red);text-align:center;display:none;margin-top:6px;font-weight:700"></p>
@@ -536,6 +543,13 @@ const PROPS = [
   {icon:'🛡️', label:'Бамбай'},{icon:'🎸', label:'Гитар'},{icon:'🏆', label:'Цом'},
   {icon:'🔥', label:'Дөл'},{icon:'', label:'Хоосон'}
 ];
+const FRAMES = [
+  {id:'solid', label:'🟦 Энгийн'},
+  {id:'gold', label:'🌟 Алтан'},
+  {id:'rainbow', label:'🌈 Солонго'},
+  {id:'sparkle', label:'✨ Гялалзсан'},
+  {id:'double', label:'🖼️ Давхар'}
+];
 const COLORS  = ['#e21b3c','#1368ce','#d89e00','#26890c','#46178f','#06b6d4','#ec4899','#f97316'];
 const SHAPES  = ['▲','◆','●','■'];
 const MEDALS  = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
@@ -562,14 +576,23 @@ let editQs = [];
 
 // Student state
 let studentId = null;
-let myAvatar = AVATARS[0], myOutfit = OUTFITS[0].icon, myHat = HATS[0].icon, myProp = PROPS[0].icon, myColor = COLORS[0];
+let myOutfit = OUTFITS[0].icon, myHat = HATS[0].icon, myProp = PROPS[0].icon, myFrame = FRAMES[0].id, myColor = COLORS[0];
 let myOutfitLbl = OUTFITS[0].label;
+
+const WHITE_HUMAN_SVG = `<svg viewBox="0 0 64 64" class="human-svg" aria-hidden="true">
+  <circle cx="32" cy="19" r="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  <circle cx="28" cy="18" r="1.8" fill="#334155"/>
+  <circle cx="36" cy="18" r="1.8" fill="#334155"/>
+  <path d="M27.5 23 Q32 26.5 36.5 23" fill="none" stroke="#334155" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M16 56 C16 40 22 34 32 34 C42 34 48 40 48 56 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+</svg>`;
 
 function renderWornChar(s, size='md') {
   const col = s.color || '#4255ff';
-  return `<div class="worn-char wc-${size}" style="border-color:${col};background:${col}18">
+  const fr = s.frame || 'solid';
+  return `<div class="worn-char wc-${size} frame-${fr}" style="border-color:${col};background:${col}1c">
     ${s.hat ? `<span class="wc-hat">${s.hat}</span>` : ''}
-    <span class="wc-face">${s.avatar || '🦁'}</span>
+    ${WHITE_HUMAN_SVG}
     ${s.outfit ? `<span class="wc-body">${s.outfit}</span>` : ''}
     ${s.prop ? `<span class="wc-prop">${s.prop}</span>` : ''}
   </div>`;
@@ -1265,8 +1288,8 @@ function handleTeacherMsg(data) {
       sendToStudent(data.sid, { type: 'full', msg: 'Уралдаанд 40 хүн дүүрсэн байна!' });
       return;
     }
-    students[data.sid] = { id: data.sid, name: data.name, avatar: data.avatar, outfit: data.outfit, hat: data.hat||'', prop: data.prop||'', color: data.color, score: 0 };
-    const roster = Object.values(students).map(s => ({ name: s.name, avatar: s.avatar, outfit: s.outfit, hat: s.hat, prop: s.prop, color: s.color }));
+    students[data.sid] = { id: data.sid, name: data.name, outfit: data.outfit, hat: data.hat||'', prop: data.prop||'', frame: data.frame||'solid', color: data.color, score: 0 };
+    const roster = Object.values(students).map(s => ({ name: s.name, outfit: s.outfit, hat: s.hat, prop: s.prop, frame: s.frame, color: s.color }));
     sendToStudent(data.sid, { type: 'joined', sid: data.sid, count: roster.length, players: roster });
     updateLobbyUI();
     broadcast({ type: 'count', count: roster.length, players: roster });
@@ -1417,7 +1440,7 @@ function nextQuestion() {
   clearInterval(timerIv);
   if (qIdx + 1 >= activeSet.count) {
     const ranked = Object.values(students)
-      .map(s => ({ id: s.id, name: s.name, avatar: s.avatar, outfit: s.outfit, hat: s.hat, prop: s.prop, color: s.color, score: s.score }))
+      .map(s => ({ id: s.id, name: s.name, outfit: s.outfit, hat: s.hat, prop: s.prop, frame: s.frame, color: s.color, score: s.score }))
       .sort((a,b) => b.score - a.score);
     broadcast({ type: 'finished', ranked });
     ge('t-final-lb').innerHTML = renderPodium(ranked) + renderLB(ranked, null);
@@ -1438,28 +1461,28 @@ function enterWithPin() {
 }
 
 function buildJoinView() {
-  ge('av-grid').innerHTML = AVATARS.map((a,i) => `<span class="av-opt ${i===0?'sel':''}" onclick="pickAv(this,'${a}')">${a}</span>`).join('');
   ge('out-grid').innerHTML = OUTFITS.map((o,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickOut(this,'${o.icon}','${o.label}')">${o.icon} ${o.label}</span>`).join('');
   ge('hat-grid').innerHTML = HATS.map((h,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickHat(this,'${h.icon}')">${h.icon||'🚫'} ${h.label}</span>`).join('');
   ge('prop-grid').innerHTML = PROPS.map((p,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickProp(this,'${p.icon}')">${p.icon||'🚫'} ${p.label}</span>`).join('');
+  ge('frame-grid').innerHTML = FRAMES.map((f,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickFrame(this,'${f.id}')">${f.label}</span>`).join('');
   ge('col-grid').innerHTML = COLORS.map((c,i) => `<div class="col-opt ${i===0?'sel':''}" style="background:${c}" onclick="pickCol(this,'${c}')"></div>`).join('');
-  myAvatar = AVATARS[0]; myOutfit = OUTFITS[0].icon; myOutfitLbl = OUTFITS[0].label;
-  myHat = HATS[0].icon; myProp = PROPS[0].icon; myColor = COLORS[0];
+  myOutfit = OUTFITS[0].icon; myOutfitLbl = OUTFITS[0].label;
+  myHat = HATS[0].icon; myProp = PROPS[0].icon; myFrame = FRAMES[0].id; myColor = COLORS[0];
   updatePreview();
 }
 
 function updatePreview() {
   const name = v('s-name') || 'Тоглогч';
-  ge('pv-char').innerHTML = renderWornChar({ avatar: myAvatar, outfit: myOutfit, hat: myHat, prop: myProp, color: myColor }, 'lg');
+  ge('pv-char').innerHTML = renderWornChar({ outfit: myOutfit, hat: myHat, prop: myProp, frame: myFrame, color: myColor }, 'lg');
   ge('pv-name').textContent = name;
   ge('pv-name').style.color = myColor;
   ge('pv-out-lbl').textContent = `${myOutfitLbl} ${myHat} ${myProp}`.trim();
   ge('char-preview').style.borderColor = myColor;
 }
-function pickAv(el,a){ el.parentElement.querySelectorAll('.av-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myAvatar=a; updatePreview(); }
 function pickOut(el,o,lbl){ el.parentElement.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myOutfit=o; myOutfitLbl=lbl; updatePreview(); }
 function pickHat(el,h){ el.parentElement.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myHat=h; updatePreview(); }
 function pickProp(el,p){ el.parentElement.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myProp=p; updatePreview(); }
+function pickFrame(el,f){ el.parentElement.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myFrame=f; updatePreview(); }
 function pickCol(el,c){ el.parentElement.querySelectorAll('.col-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myColor=c; updatePreview(); }
 
 function studentJoin() {
@@ -1475,7 +1498,7 @@ function studentJoin() {
   connectMqtt(0, cl => {
     cl.subscribe([`quizrace/${roomPin}/all`, `quizrace/${roomPin}/s/${studentId}`], () => {
       cl.publish(`quizrace/${roomPin}/host`, JSON.stringify({
-        type: 'join', sid: studentId, name, avatar: myAvatar, outfit: myOutfit, hat: myHat, prop: myProp, color: myColor
+        type: 'join', sid: studentId, name, outfit: myOutfit, hat: myHat, prop: myProp, frame: myFrame, color: myColor
       }));
       joinTimeout = setTimeout(() => {
         err.textContent = 'Өрөө олдсонгүй эсвэл багш өрөөг нээгээгүй байна. PIN кодоо шалгана уу.';
@@ -1504,7 +1527,7 @@ function handleStudentMsg(data) {
     cleanupPeer();
   } else if (data.type === 'joined') {
     clearTimeout(joinTimeout);
-    ge('sw-avatar').innerHTML = renderWornChar({ avatar: myAvatar, outfit: myOutfit, hat: myHat, prop: myProp, color: myColor }, 'lg');
+    ge('sw-avatar').innerHTML = renderWornChar({ outfit: myOutfit, hat: myHat, prop: myProp, frame: myFrame, color: myColor }, 'lg');
     ge('sw-name').textContent = v('s-name');
     ge('sw-cnt').textContent = `${data.count} суралцагч нэгдсэн`;
     if (data.players) ge('sw-players').innerHTML = renderProfileCards(data.players);
@@ -1593,7 +1616,7 @@ function submitStudentAns(ai) {
 function showStudentResults(ranked) {
   const idx = ranked.findIndex(x => x.id === studentId);
   const rank = idx >= 0 ? idx + 1 : ranked.length;
-  ge('sr-avatar').innerHTML = renderWornChar({ avatar: myAvatar, outfit: myOutfit, hat: myHat, prop: myProp, color: myColor }, 'lg');
+  ge('sr-avatar').innerHTML = renderWornChar({ outfit: myOutfit, hat: myHat, prop: myProp, frame: myFrame, color: myColor }, 'lg');
   ge('sr-name').textContent = v('s-name');
   ge('sr-score').textContent = myScore;
   const rEl = ge('sr-rank');
