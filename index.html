@@ -313,44 +313,44 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
   <div class="card center" style="max-width:440px">
     <div style="font-size:3.5rem;margin-bottom:6px">🏆</div>
     <h1>Асуулт Уралдаан</h1>
-    <p class="muted" style="margin-bottom:20px">Код оруулж уралдаанд нэгдэх эсвэл багшаар асуулт бэлдэнэ үү.</p>
+    <p class="muted" style="margin-bottom:20px" id="home-sub">Тоглоомын 6 оронтой PIN кодоо оруулаад уралдаанд нэгдэнэ үү.</p>
 
     <label style="text-align:left">Тоглоомын PIN код</label>
     <input id="join-pin" placeholder="6 оронтой код (ж.нь: 482910)" maxlength="6" inputmode="numeric" onkeydown="if(event.key==='Enter')enterWithPin()" style="text-align:center;font-size:1.3rem;letter-spacing:3px">
     <button class="btn btn-dark btn-full btn-lg" onclick="enterWithPin()">🎮 Нэгдэх</button>
 
-    <div class="sep"></div>
-    <button class="btn btn-primary btn-full btn-lg" onclick="openTeacherPortal()">👩‍🏫 Багш: Асуулт бэлдэх / Эхлүүлэх</button>
+    <div id="home-teacher-wrap">
+      <div class="sep"></div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="openTeacherPortal()">👩‍🏫 Багш: Асуулт бэлдэх / Эхлүүлэх</button>
+    </div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     AUTH — Утасны дугаараар нэвтрэх / бүртгүүлэх
+     AUTH — Багш / Сурагч тусдаа нэвтрэх (Нууц үггүй)
 ══════════════════════════════════════════════════ -->
 <div id="v-auth" class="view active" style="justify-content:center">
   <div class="card" style="max-width:420px">
     <div style="font-size:3rem;text-align:center;margin-bottom:4px">📱</div>
-    <h2 class="center">Нэвтрэх / Бүртгүүлэх</h2>
-    <p class="muted center" style="font-size:.88rem;margin-bottom:14px">Үргэлжлүүлэхийн тулд утасны дугаараараа нэвтэрнэ үү</p>
+    <h2 class="center">Тавтай морил!</h2>
+    <p class="muted center" style="font-size:.88rem;margin-bottom:14px">Багш эсвэл сурагчаар утасны дугаараа оруулж нэвтэрнэ үү</p>
     <div class="tabs">
-      <div class="tab active" id="tab-login" onclick="switchAuthTab('login')">Нэвтрэх</div>
-      <div class="tab" id="tab-reg" onclick="switchAuthTab('reg')">Бүртгүүлэх</div>
+      <div class="tab active" id="tab-teacher" onclick="switchAuthTab('teacher')">👩‍🏫 Багш</div>
+      <div class="tab" id="tab-student" onclick="switchAuthTab('student')">🎓 Сурагч</div>
     </div>
-    <div id="auth-login">
+    <div id="auth-teacher">
+      <label>Багшийн нэр</label>
+      <input id="t-name" placeholder="Дорж багш" maxlength="30">
       <label>Утасны дугаар (8 оронтой)</label>
-      <input id="l-phone" placeholder="99112233" maxlength="8" inputmode="numeric" onkeydown="if(event.key==='Enter')doPhoneLogin()">
-      <label>Нууц үг</label>
-      <input id="l-pass" type="password" placeholder="••••" onkeydown="if(event.key==='Enter')doPhoneLogin()">
-      <button class="btn btn-primary btn-full btn-lg" onclick="doPhoneLogin()">Нэвтрэх →</button>
+      <input id="t-phone" placeholder="99112233" maxlength="8" inputmode="numeric" onkeydown="if(event.key==='Enter')doRoleLogin('teacher')">
+      <button class="btn btn-primary btn-full btn-lg" onclick="doRoleLogin('teacher')">👩‍🏫 Багшаар нэвтрэх →</button>
     </div>
-    <div id="auth-reg" style="display:none">
-      <label>Таны нэр</label>
-      <input id="r-name" placeholder="Дорж багш" maxlength="30">
+    <div id="auth-student" style="display:none">
+      <label>Сурагчийн нэр</label>
+      <input id="st-name" placeholder="Бат" maxlength="20">
       <label>Утасны дугаар (8 оронтой)</label>
-      <input id="r-phone" placeholder="99112233" maxlength="8" inputmode="numeric">
-      <label>Нууц үг (4+ тэмдэгт)</label>
-      <input id="r-pass" type="password" placeholder="••••" onkeydown="if(event.key==='Enter')doPhoneRegister()">
-      <button class="btn btn-green btn-full btn-lg" onclick="doPhoneRegister()">Бүртгүүлэх →</button>
+      <input id="st-phone" placeholder="88112233" maxlength="8" inputmode="numeric" onkeydown="if(event.key==='Enter')doRoleLogin('student')">
+      <button class="btn btn-green btn-full btn-lg" onclick="doRoleLogin('student')">🎓 Сурагчаар нэвтрэх →</button>
     </div>
     <p id="auth-err" style="color:var(--k-red);text-align:center;display:none;margin-top:8px;font-weight:700"></p>
   </div>
@@ -762,26 +762,31 @@ function loadUsers() {
 }
 function saveUsers(u) { localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
 
-function openAuth(tab='login') {
+function openAuth(tab='teacher') {
   switchAuthTab(tab);
   showView('v-auth');
 }
 function switchAuthTab(t) {
-  ['login','reg'].forEach(x => {
+  ['teacher','student'].forEach(x => {
     ge('auth-'+x).style.display = x===t ? '' : 'none';
     ge('tab-'+x).classList.toggle('active', x===t);
   });
   ge('auth-err').style.display = 'none';
 }
 function openTeacherPortal() {
-  if (currentAccount) openSets();
-  else openAuth('login');
+  if (currentAccount && currentAccount.role === 'teacher') openSets();
+  else openAuth('teacher');
 }
 function updateAuthUI() {
   ge('nav-user-pill').style.display = currentAccount ? '' : 'none';
   ge('nav-logout-btn').style.display = currentAccount ? '' : 'none';
   ge('nav-auth-btn').style.display = 'none';
-  if (currentAccount) ge('nav-user-pill').textContent = `👤 ${currentAccount.name} (${currentAccount.phone})`;
+  if (currentAccount) {
+    const ico = currentAccount.role === 'teacher' ? '👩‍🏫' : '🎓';
+    ge('nav-user-pill').textContent = `${ico} ${currentAccount.name} (${currentAccount.phone})`;
+  }
+  const tw = ge('home-teacher-wrap');
+  if (tw) tw.style.display = (currentAccount && currentAccount.role === 'student') ? 'none' : '';
 }
 function afterAuthSuccess() {
   updateAuthUI();
@@ -791,35 +796,24 @@ function afterAuthSuccess() {
     buildJoinView();
     if (ge('s-name') && currentAccount) { ge('s-name').value = currentAccount.name; updatePreview(); }
     showView('v-sjoin');
+  } else if (currentAccount && currentAccount.role === 'teacher') {
+    openSets();
   } else {
     showView('v-home');
   }
 }
-function doPhoneRegister() {
-  const name = v('r-name'), phone = v('r-phone').replace(/\D/g,''), pass = v('r-pass');
+function doRoleLogin(role) {
+  const name = v(role === 'teacher' ? 't-name' : 'st-name');
+  const phone = v(role === 'teacher' ? 't-phone' : 'st-phone').replace(/\D/g,'');
   const err = ge('auth-err');
   if (!name) { err.textContent = 'Нэрээ бичнэ үү'; err.style.display='block'; return; }
   if (!/^\d{8}$/.test(phone)) { err.textContent = '8 оронтой утасны дугаар оруулна уу'; err.style.display='block'; return; }
-  if (pass.length < 4) { err.textContent = 'Нууц үг хамгийн багадаа 4 тэмдэгт байна'; err.style.display='block'; return; }
   const users = loadUsers();
-  if (users[phone]) { err.textContent = 'Энэ утасны дугаар аль хэдийн бүртгэлтэй байна'; err.style.display='block'; return; }
-  users[phone] = { name, phone, pass };
+  users[phone] = { name, phone, role };
   saveUsers(users);
-  currentAccount = { name, phone };
+  currentAccount = { name, phone, role };
   localStorage.setItem(SESS_KEY, JSON.stringify(currentAccount));
-  toast('Амжилттай бүртгэгдлээ! 🎉');
-  afterAuthSuccess();
-}
-function doPhoneLogin() {
-  const phone = v('l-phone').replace(/\D/g,''), pass = v('l-pass');
-  const err = ge('auth-err');
-  if (!/^\d{8}$/.test(phone)) { err.textContent = '8 оронтой утасны дугаар оруулна уу'; err.style.display='block'; return; }
-  const users = loadUsers();
-  const u = users[phone];
-  if (!u || u.pass !== pass) { err.textContent = 'Утасны дугаар эсвэл нууц үг буруу байна'; err.style.display='block'; return; }
-  currentAccount = { name: u.name, phone: u.phone };
-  localStorage.setItem(SESS_KEY, JSON.stringify(currentAccount));
-  toast(`Тавтай морил, ${u.name}! 👋`);
+  toast(`Тавтай морил, ${name}! 👋`);
   afterAuthSuccess();
 }
 function doLogout() {
@@ -827,7 +821,7 @@ function doLogout() {
   currentAccount = null;
   localStorage.removeItem(SESS_KEY);
   updateAuthUI();
-  openAuth('login');
+  openAuth('teacher');
   toast('Системээс гарлаа');
 }
 
@@ -871,7 +865,7 @@ function init() {
   if (rm) {
     if (!currentAccount) {
       pendingRoomPin = rm;
-      openAuth('login');
+      openAuth('student');
       return;
     }
     roomPin = rm;
@@ -880,7 +874,8 @@ function init() {
     showView('v-sjoin');
     return;
   }
-  if (!currentAccount) { openAuth('login'); return; }
+  if (!currentAccount) { openAuth('teacher'); return; }
+  if (currentAccount.role === 'teacher') { openSets(); return; }
   showView('v-home');
 }
 
