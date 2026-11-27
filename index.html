@@ -1,0 +1,190 @@
+!<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Асуулт хариулт</title>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --text: #1d2433;
+    --muted: #667085;
+    --line: #dfe4ec;
+    --accent: #1f5eff;
+    --accent-text: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171f;
+      --surface: #1c202b;
+      --text: #e8ebf2;
+      --muted: #9aa3b5;
+      --line: #2e3446;
+      --accent: #6c93ff;
+      --accent-text: #0e1220;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.8rem; margin: 8px 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .box {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px; margin-bottom: 16px;
+  }
+  input, textarea {
+    width: 100%; padding: 10px 12px; margin-bottom: 10px;
+    font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px;
+  }
+  textarea { min-height: 80px; resize: vertical; }
+  button {
+    font: inherit; cursor: pointer; padding: 8px 16px;
+    border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--text);
+  }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+  button.small { padding: 4px 10px; font-size: .85rem; }
+  .q-title { font-size: 1.15rem; font-weight: 600; margin: 0 0 4px; }
+  .meta { color: var(--muted); font-size: .85rem; margin-bottom: 8px; }
+  .answers { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .answer { padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .answer:last-child { border-bottom: 0; }
+  .answer p { margin: 0 0 4px; white-space: pre-wrap; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .empty { text-align: center; color: var(--muted); padding: 32px 0; }
+  .search { margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Асуулт хариулт</h1>
+  <p class="sub">Асуултаа тавь, бусад хариулна.</p>
+
+  <div class="box">
+    <input id="qTitle" placeholder="Асуултын гарчиг" maxlength="150">
+    <textarea id="qBody" placeholder="Дэлгэрэнгүй тайлбар (заавал биш)"></textarea>
+    <input id="qAuthor" placeholder="Таны нэр" maxlength="40">
+    <button class="primary" id="addQ">Асуулт нэмэх</button>
+  </div>
+
+  <input class="search" id="search" placeholder="Асуулт хайх...">
+  <div id="list"></div>
+</div>
+
+<script>
+  const KEY = "qa-data-v1";
+  let questions = load();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(questions)); } catch (e) {}
+  }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function fmt(ts) { return new Date(ts).toLocaleString("mn-MN"); }
+
+  function render() {
+    const term = document.getElementById("search").value.trim().toLowerCase();
+    const list = document.getElementById("list");
+    const items = questions.filter(q =>
+      !term || (q.title + " " + q.body).toLowerCase().includes(term));
+
+    if (!items.length) {
+      list.innerHTML = '<div class="empty">Асуулт алга байна. Эхний асуултаа нэм!</div>';
+      return;
+    }
+
+    list.innerHTML = items.map(q => `
+      <div class="box" data-id="${q.id}">
+        <p class="q-title">${esc(q.title)}</p>
+        <div class="meta">${esc(q.author)} · ${fmt(q.time)} · ${q.answers.length} хариулт</div>
+        ${q.body ? `<p style="white-space:pre-wrap;margin:0 0 8px">${esc(q.body)}</p>` : ""}
+        <div class="actions">
+          <button class="small" data-act="toggle">Хариулах / харах</button>
+          <button class="small" data-act="delQ">Устгах</button>
+        </div>
+        <div class="answers" hidden>
+          ${q.answers.map(a => `
+            <div class="answer" data-aid="${a.id}">
+              <p>${esc(a.text)}</p>
+              <div class="meta">${esc(a.author)} · ${fmt(a.time)}
+                <button class="small" data-act="delA">Устгах</button></div>
+            </div>`).join("") || '<div class="meta">Хариулт хараахан алга.</div>'}
+          <input placeholder="Таны нэр" class="aAuthor" maxlength="40">
+          <textarea placeholder="Хариултаа бич..." class="aText"></textarea>
+          <button class="primary small" data-act="addA">Хариулт илгээх</button>
+        </div>
+      </div>`).join("");
+  }
+
+  document.getElementById("addQ").addEventListener("click", () => {
+    const title = document.getElementById("qTitle").value.trim();
+    if (!title) { alert("Асуултын гарчиг бичнэ үү."); return; }
+    questions.unshift({
+      id: uid(),
+      title,
+      body: document.getElementById("qBody").value.trim(),
+      author: document.getElementById("qAuthor").value.trim() || "Нэргүй",
+      time: Date.now(),
+      answers: []
+    });
+    save();
+    ["qTitle", "qBody"].forEach(id => document.getElementById(id).value = "");
+    render();
+  });
+
+  document.getElementById("search").addEventListener("input", render);
+
+  document.getElementById("list").addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const card = btn.closest(".box");
+    const q = questions.find(x => x.id === card.dataset.id);
+    const act = btn.dataset.act;
+
+    if (act === "toggle") {
+      const el = card.querySelector(".answers");
+      el.hidden = !el.hidden;
+    } else if (act === "delQ") {
+      if (confirm("Энэ асуултыг устгах уу?")) {
+        questions = questions.filter(x => x.id !== q.id);
+        save(); render();
+      }
+    } else if (act === "addA") {
+      const text = card.querySelector(".aText").value.trim();
+      if (!text) return;
+      q.answers.push({
+        id: uid(), text,
+        author: card.querySelector(".aAuthor").value.trim() || "Нэргүй",
+        time: Date.now()
+      });
+      save(); render();
+      const again = document.querySelector(`[data-id="${q.id}"] .answers`);
+      if (again) again.hidden = false;
+    } else if (act === "delA") {
+      const aid = btn.closest(".answer").dataset.aid;
+      q.answers = q.answers.filter(a => a.id !== aid);
+      save(); render();
+      const again = document.querySelector(`[data-id="${q.id}"] .answers`);
+      if (again) again.hidden = false;
+    }
+  });
+
+  render();
+</script>
+</body>
+</html>
