@@ -809,6 +809,13 @@ function doRoleLogin(role) {
   if (!name) { err.textContent = 'Нэрээ бичнэ үү'; err.style.display='block'; return; }
   if (!/^\d{8}$/.test(phone)) { err.textContent = '8 оронтой утасны дугаар оруулна уу'; err.style.display='block'; return; }
   const users = loadUsers();
+  if (users[phone] && users[phone].role && users[phone].role !== role) {
+    err.textContent = users[phone].role === 'teacher'
+      ? '⚠️ Энэ дугаар Багшаар бүртгэлтэй тул Сурагчаар нэвтрэх боломжгүй!'
+      : '⚠️ Энэ дугаар Сурагчаар бүртгэлтэй тул Багшаар нэвтрэх боломжгүй!';
+    err.style.display = 'block';
+    return;
+  }
   users[phone] = { name, phone, role };
   saveUsers(users);
   currentAccount = { name, phone, role };
