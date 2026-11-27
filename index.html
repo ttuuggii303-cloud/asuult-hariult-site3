@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>QuizRace — Kahoot маягийн Асуулт Уралдаан</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <!-- MQTT.js (No Firebase / No Login / Works on all 4G & WiFi networks) -->
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <!-- QR Code -->
@@ -33,15 +35,23 @@ body{
   background:radial-gradient(circle at 20% 20%, #5c22b8 0%, #46178f 45%, #25076b 100%);
   background-attachment:fixed;
   color:var(--text);
-  font-family:'Montserrat',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   min-height:100vh;
   line-height:1.5;
+  overflow-x:hidden;
 }
+
+/* ===== AMBIENT SHAPES ===== */
+.bg-shapes{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;opacity:.08}
+.bg-shapes span{position:absolute;color:#fff;font-size:7rem;font-weight:900;user-select:none}
+.topbar,.view{position:relative;z-index:1}
 
 /* ===== TOPBAR ===== */
 .topbar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:12px 20px;color:#fff;
+  padding:12px 22px;color:#fff;
+  background:rgba(20,5,58,.28);backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(255,255,255,.12);
 }
 .brand{
   display:flex;align-items:center;gap:10px;
@@ -250,6 +260,12 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
 </style>
 </head>
 <body>
+<div class="bg-shapes" aria-hidden="true">
+  <span style="top:8%;left:6%;transform:rotate(-15deg)">▲</span>
+  <span style="top:18%;right:8%;transform:rotate(20deg)">◆</span>
+  <span style="bottom:14%;left:10%;transform:rotate(12deg)">●</span>
+  <span style="bottom:10%;right:12%;transform:rotate(-18deg)">■</span>
+</div>
 <div id="toast"></div>
 
 <!-- 3-2-1 COUNTDOWN OVERLAY -->
@@ -277,7 +293,7 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
     <p class="muted" style="margin-bottom:20px">Бүртгүүлэх шаардлагагүй — шууд код эсвэл QR-аар орно!</p>
 
     <label style="text-align:left">Тоглоомын PIN код</label>
-    <input id="join-pin" placeholder="6 оронтой код (ж.нь: 482910)" maxlength="6" inputmode="numeric" style="text-align:center;font-size:1.3rem;letter-spacing:3px">
+    <input id="join-pin" placeholder="6 оронтой код (ж.нь: 482910)" maxlength="6" inputmode="numeric" onkeydown="if(event.key==='Enter')enterWithPin()" style="text-align:center;font-size:1.3rem;letter-spacing:3px">
     <button class="btn btn-dark btn-full btn-lg" onclick="enterWithPin()">🎮 Нэгдэх</button>
 
     <div class="sep"></div>
@@ -363,7 +379,8 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
         <div class="qr-wrap" id="qr-box"></div>
         <div class="muted" style="font-size:.82rem">Эсвэл PIN кодоор орно уу:</div>
         <div class="pin-box" id="lobby-pin">------</div>
-        <p class="muted" style="font-size:.75rem;max-width:220px;word-break:break-all" id="join-url-txt"></p>
+        <p class="muted" style="font-size:.75rem;max-width:220px;word-break:break-all;margin-bottom:8px" id="join-url-txt"></p>
+        <button class="btn btn-sm" onclick="copyJoinUrl()">📋 Линк хуулах</button>
       </div>
       <div style="flex:1;min-width:240px">
         <h3>🎮 Нэвтэрсэн суралцагчид</h3>
@@ -442,7 +459,7 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
 <div id="v-sjoin" class="view">
   <div class="card" style="max-width:460px">
     <h2 class="center" style="margin-bottom:12px">🎮 Уралдаанд нэгдэх</h2>
-    <div class="char-preview" id="char-preview">
+    <div class="char-preview" id="char-preview" style="position:sticky;top:10px;z-index:20;box-shadow:0 4px 16px rgba(0,0,0,.08)">
       <div id="pv-char"></div>
       <div>
         <div id="pv-name" style="font-weight:900;font-size:1.15rem;color:#e21b3c">Тоглогч</div>
@@ -450,7 +467,7 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
       </div>
     </div>
     <label>Таны нэр (20 тэмдэгт)</label>
-    <input id="s-name" placeholder="Нэрээ бич..." maxlength="20" oninput="updatePreview()">
+    <input id="s-name" placeholder="Нэрээ бич..." maxlength="20" oninput="updatePreview()" onkeydown="if(event.key==='Enter')studentJoin()">
     <label>Хувцас өмсгөх</label>
     <div class="outfit-grid" id="out-grid"></div>
     <label>Малгай / Толгойн гоёл</label>
@@ -1318,6 +1335,13 @@ function updateLobbyUI() {
   ge('lobby-students').innerHTML = arr.length
     ? renderProfileCards(arr)
     : '<p class="muted">Суралцагч хүлээж байна...</p>';
+}
+
+function copyJoinUrl() {
+  const txt = ge('join-url-txt').textContent;
+  if (navigator.clipboard && txt) {
+    navigator.clipboard.writeText(txt).then(() => toast('Линк хуулагдлаа 📋'));
+  }
 }
 
 function closeLobby() {
