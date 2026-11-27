@@ -165,6 +165,21 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
 .outfit-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .out-opt{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:10px;border:2px solid var(--line);background:var(--surface-alt);cursor:pointer;font-size:.84rem;font-weight:700;user-select:none}
 .out-opt.sel{border-color:var(--k-purple);background:#efe7ff;color:var(--k-purple)}
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;margin-bottom:14px}
+.char-tile{
+  position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:8px 4px;border-radius:14px;border:2px solid var(--line);background:var(--surface-alt);
+  cursor:pointer;transition:transform .14s,border-color .14s,box-shadow .14s,background .14s;user-select:none;
+}
+.char-tile:hover{transform:translateY(-2px);border-color:#b794f4;box-shadow:0 4px 12px rgba(70,23,143,.14)}
+.char-tile.sel{border-color:var(--k-purple);background:#efe7ff;box-shadow:0 4px 14px rgba(70,23,143,.22)}
+.char-tile.sel::after{
+  content:'✓';position:absolute;top:4px;right:4px;width:16px;height:16px;border-radius:50%;
+  background:var(--k-purple);color:#fff;font-size:.65rem;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
+}
+.char-tile svg{width:48px;height:48px;display:block}
+.char-tile span{font-size:.72rem;font-weight:800;text-align:center;line-height:1.15;color:var(--text);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .color-grid{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:14px}
 .col-opt{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent}
 .col-opt.sel{border-color:#fff;transform:scale(1.2);box-shadow:0 0 0 2px var(--k-purple)}
@@ -469,9 +484,9 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
     <label>Таны нэр (20 тэмдэгт)</label>
     <input id="s-name" placeholder="Нэрээ бич..." maxlength="20" oninput="updatePreview()" onkeydown="if(event.key==='Enter')studentJoin()">
     <label>🐾 3D Амьтад сонгох</label>
-    <div class="outfit-grid" id="animal-grid"></div>
+    <div class="char-grid" id="animal-grid"></div>
     <label>🧠 Алдартай ухаантай хүмүүс</label>
-    <div class="outfit-grid" id="genius-grid"></div>
+    <div class="char-grid" id="genius-grid"></div>
     <label>Хүрээ сонгох</label>
     <div class="outfit-grid" id="frame-grid"></div>
     <label>Өнгө сонгох</label>
@@ -602,80 +617,84 @@ let myBody = BODIES[0].id, myFrame = FRAMES[0].id, myColor = COLORS[0];
 function renderBodySvg(bodyId) {
   const b = BODIES.find(x => x.id === bodyId) || BODIES[0];
   const gid = 'g_' + bodyId + '_' + Math.random().toString(36).slice(2,6);
-  let back = '', faceExtra = '', headTop = '';
+  let back = '', faceExtra = '', headTop = '', collar = '';
 
   if (b.cat === 'animal') {
     if (b.ear === 'mane') {
-      back = `<circle cx="32" cy="22" r="17.5" fill="#92400e"/><circle cx="32" cy="22" r="15.5" fill="#b45309"/>`;
+      back = `<circle cx="40" cy="29" r="22" fill="#92400e"/><circle cx="40" cy="29" r="19.5" fill="#b45309"/>`;
     } else if (b.ear === 'round' || b.ear === 'tiger' || b.ear === 'panda') {
       const ec = b.ear === 'panda' ? '#1e293b' : b.stroke;
-      const ic = b.ear === 'panda' ? '#334155' : '#fde68a';
-      back = `<circle cx="20" cy="12" r="5.5" fill="${ec}"/><circle cx="20" cy="12" r="2.7" fill="${ic}"/><circle cx="44" cy="12" r="5.5" fill="${ec}"/><circle cx="44" cy="12" r="2.7" fill="${ic}"/>`;
+      const ic = b.ear === 'panda' ? '#475569' : '#fde68a';
+      back = `<circle cx="24" cy="15" r="7" fill="${ec}"/><circle cx="24" cy="15" r="3.6" fill="${ic}"/><circle cx="56" cy="15" r="7" fill="${ec}"/><circle cx="56" cy="15" r="3.6" fill="${ic}"/>`;
     } else if (b.ear === 'pointy') {
-      back = `<polygon points="18,19 21,5 29,12" fill="${b.stroke}"/><polygon points="20,17 22,8 27,13" fill="#fda4af"/><polygon points="46,19 43,5 35,12" fill="${b.stroke}"/><polygon points="44,17 42,8 37,13" fill="#fda4af"/>`;
+      back = `<polygon points="22,25 25,6 35,15" fill="${b.stroke}" stroke="${b.stroke}" stroke-width="2" stroke-linejoin="round"/><polygon points="24.5,22 26.5,10 33,16" fill="#fda4af"/><polygon points="58,25 55,6 45,15" fill="${b.stroke}" stroke="${b.stroke}" stroke-width="2" stroke-linejoin="round"/><polygon points="55.5,22 53.5,10 47,16" fill="#fda4af"/>`;
     } else if (b.ear === 'long') {
-      back = `<ellipse cx="24.5" cy="9" rx="4" ry="9" fill="${b.head}" stroke="${b.stroke}" stroke-width="1.5"/><ellipse cx="24.5" cy="9" rx="2" ry="6" fill="#fda4af"/><ellipse cx="39.5" cy="9" rx="4" ry="9" fill="${b.head}" stroke="${b.stroke}" stroke-width="1.5"/><ellipse cx="39.5" cy="9" rx="2" ry="6" fill="#fda4af"/>`;
+      back = `<ellipse cx="30" cy="12" rx="5.2" ry="11.5" fill="${b.head}" stroke="${b.stroke}" stroke-width="1.8"/><ellipse cx="30" cy="12" rx="2.6" ry="7.5" fill="#fda4af"/><ellipse cx="50" cy="12" rx="5.2" ry="11.5" fill="${b.head}" stroke="${b.stroke}" stroke-width="1.8"/><ellipse cx="50" cy="12" rx="2.6" ry="7.5" fill="#fda4af"/>`;
     } else if (b.ear === 'floppy') {
-      back = `<ellipse cx="17.5" cy="23" rx="4.5" ry="9" fill="${b.stroke}" transform="rotate(10 17.5 23)"/><ellipse cx="46.5" cy="23" rx="4.5" ry="9" fill="${b.stroke}" transform="rotate(-10 46.5 23)"/>`;
+      back = `<ellipse cx="21" cy="30" rx="5.8" ry="11.5" fill="${b.stroke}" transform="rotate(12 21 30)"/><ellipse cx="59" cy="30" rx="5.8" ry="11.5" fill="${b.stroke}" transform="rotate(-12 59 30)"/>`;
     } else if (b.ear === 'owl') {
-      back = `<polygon points="19,15 17,6 26,11" fill="${b.stroke}"/><polygon points="45,15 47,6 38,11" fill="${b.stroke}"/>`;
-      faceExtra = `<circle cx="27" cy="20" r="5" fill="#fff" stroke="#fbbf24" stroke-width="1.4"/><circle cx="37" cy="20" r="5" fill="#fff" stroke="#fbbf24" stroke-width="1.4"/><polygon points="30,23 34,23 32,27" fill="#f59e0b"/>`;
+      back = `<polygon points="22,19 19,8 31,14" fill="${b.stroke}"/><polygon points="58,19 61,8 49,14" fill="${b.stroke}"/>`;
+      faceExtra = `<circle cx="33.5" cy="27" r="6.5" fill="#fff" stroke="#fbbf24" stroke-width="1.8"/><circle cx="46.5" cy="27" r="6.5" fill="#fff" stroke="#fbbf24" stroke-width="1.8"/><polygon points="37.5,31 42.5,31 40,36" fill="#f59e0b"/>`;
     } else if (b.ear === 'dragon') {
-      back = `<polygon points="22,12 19,3 27,10" fill="#fbbf24"/><polygon points="42,12 45,3 37,10" fill="#fbbf24"/>`;
+      back = `<polygon points="27,15 22,4 33,12" fill="#fbbf24" stroke="#d97706" stroke-width="1.2"/><polygon points="53,15 58,4 47,12" fill="#fbbf24" stroke="#d97706" stroke-width="1.2"/>`;
     }
     if (b.ear === 'panda') {
-      faceExtra = `<ellipse cx="26.5" cy="20" rx="3.8" ry="3" fill="#1e293b" transform="rotate(-15 26.5 20)"/><ellipse cx="37.5" cy="20" rx="3.8" ry="3" fill="#1e293b" transform="rotate(15 37.5 20)"/>`;
+      faceExtra = `<ellipse cx="33" cy="27" rx="5" ry="4" fill="#1e293b" transform="rotate(-16 33 27)"/><ellipse cx="47" cy="27" rx="5" ry="4" fill="#1e293b" transform="rotate(16 47 27)"/>`;
     } else if (b.ear === 'tiger') {
-      faceExtra = `<path d="M30,11 L32,15 L34,11 M20,21 L24,22 M44,21 L40,22" stroke="#7c2d12" stroke-width="1.6" stroke-linecap="round" fill="none"/>`;
+      faceExtra = `<path d="M37,14 L40,20 L43,14 M24,27 L29,28 M56,27 L51,28" stroke="#7c2d12" stroke-width="2" stroke-linecap="round" fill="none"/>`;
     }
     if (b.ear !== 'owl') {
-      faceExtra += `<ellipse cx="32" cy="25" rx="5.5" ry="4" fill="${b.snout}"/><polygon points="30,22.5 34,22.5 32,25" fill="#1e293b"/>`;
+      faceExtra += `<ellipse cx="40" cy="33.5" rx="7.2" ry="5.2" fill="${b.snout}"/><polygon points="37.5,30.5 42.5,30.5 40,33.5" fill="#1e293b"/><path d="M36,35.5 Q40,38.5 44,35.5" fill="none" stroke="#1e293b" stroke-width="1.6" stroke-linecap="round"/>`;
     }
+    collar = `<ellipse cx="40" cy="54" rx="10" ry="8" fill="#ffffff" opacity="0.35"/>`;
   } else {
-    // Famous Geniuses
+    // Famous Geniuses - high-craft UI/UX portraits
+    collar = `<polygon points="33,44 40,54 47,44" fill="#ffffff" opacity="0.9"/><circle cx="40" cy="58" r="1.5" fill="#fff"/>`;
     if (b.hair === 'einstein') {
-      back = `<circle cx="20" cy="18" r="6.5" fill="#f8fafc"/><circle cx="44" cy="18" r="6.5" fill="#f8fafc"/><circle cx="25" cy="11" r="6" fill="#f8fafc"/><circle cx="39" cy="11" r="6" fill="#f8fafc"/><circle cx="32" cy="9" r="6.5" fill="#ffffff"/>`;
-      faceExtra = `<path d="M26,25 Q32,29 38,25" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>`;
+      back = `<circle cx="24" cy="24" r="8" fill="#f8fafc"/><circle cx="56" cy="24" r="8" fill="#f8fafc"/><circle cx="30" cy="14" r="7.5" fill="#f8fafc"/><circle cx="50" cy="14" r="7.5" fill="#f8fafc"/><circle cx="40" cy="11" r="8" fill="#ffffff"/>`;
+      faceExtra = `<path d="M32,33 Q40,38 48,33" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>`;
     } else if (b.hair === 'newton') {
-      back = `<circle cx="19" cy="20" r="6" fill="#78350f"/><circle cx="45" cy="20" r="6" fill="#78350f"/><circle cx="22" cy="12" r="5.5" fill="#92400e"/><circle cx="42" cy="12" r="5.5" fill="#92400e"/><circle cx="32" cy="9" r="6" fill="#92400e"/>`;
+      back = `<circle cx="22" cy="26" r="7.5" fill="#78350f"/><circle cx="58" cy="26" r="7.5" fill="#78350f"/><circle cx="26" cy="15" r="7" fill="#92400e"/><circle cx="54" cy="15" r="7" fill="#92400e"/><circle cx="40" cy="11" r="7.5" fill="#92400e"/>`;
     } else if (b.hair === 'tesla') {
-      headTop = `<path d="M20,18 Q22,7 32,7 Q42,7 44,18 Q38,13 32,14 Q26,13 20,18 Z" fill="#1e293b"/>`;
-      faceExtra = `<path d="M27,25 Q32,23 37,25" fill="none" stroke="#1e293b" stroke-width="1.8" stroke-linecap="round"/>`;
+      headTop = `<path d="M24,23 Q27,9 40,9 Q53,9 56,23 Q48,16 40,17 Q32,16 24,23 Z" fill="#1e293b"/>`;
+      faceExtra = `<path d="M33,33 Q40,30.5 47,33" fill="none" stroke="#1e293b" stroke-width="2" stroke-linecap="round"/>`;
     } else if (b.hair === 'davinci' || b.hair === 'galileo' || b.hair === 'aristotle') {
-      headTop = b.hair === 'davinci' ? `<path d="M19,14 Q32,5 45,14 L42,17 Q32,12 22,17 Z" fill="#b45309"/>` : `<path d="M21,14 Q32,7 43,14" fill="none" stroke="#e2e8f0" stroke-width="4" stroke-linecap="round"/>`;
-      faceExtra = `<path d="M23,24 Q32,38 41,24 Q37,33 32,33 Q27,33 23,24 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>`;
+      headTop = b.hair === 'davinci' ? `<path d="M23,18 Q40,6 57,18 L53,21 Q40,15 27,21 Z" fill="#b45309"/>` : `<path d="M26,18 Q40,9 54,18" fill="none" stroke="#e2e8f0" stroke-width="5" stroke-linecap="round"/>`;
+      faceExtra = `<path d="M28,31 Q40,49 52,31 Q46,42 40,42 Q34,42 28,31 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>`;
     } else if (b.hair === 'curie') {
-      back = `<circle cx="32" cy="8" r="5.5" fill="#78350f"/>`;
-      headTop = `<path d="M19,19 Q21,8 32,8 Q43,8 45,19 Q38,13 32,14 Q26,13 19,19 Z" fill="#92400e"/>`;
+      back = `<circle cx="40" cy="9" r="6.5" fill="#78350f"/>`;
+      headTop = `<path d="M23,24 Q26,10 40,10 Q54,10 57,24 Q48,16 40,17 Q32,16 23,24 Z" fill="#92400e"/>`;
     } else if (b.hair === 'chinggis') {
-      headTop = `<path d="M18,16 L24,6 L32,10 L40,6 L46,16 Z" fill="#fbbf24" stroke="#92400e" stroke-width="1.4"/><circle cx="32" cy="11" r="2.2" fill="#dc2626"/>`;
-      faceExtra = `<path d="M27,25 Q32,24 37,25 M29,28 Q32,34 35,28" fill="none" stroke="#1e293b" stroke-width="1.6" stroke-linecap="round"/>`;
+      headTop = `<path d="M22,20 L29,7 L40,12 L51,7 L58,20 Z" fill="#fbbf24" stroke="#92400e" stroke-width="1.6"/><circle cx="40" cy="13" r="2.8" fill="#dc2626"/>`;
+      faceExtra = `<path d="M33,32 Q40,30 47,32 M36,36 Q40,43 44,36" fill="none" stroke="#1e293b" stroke-width="2" stroke-linecap="round"/>`;
     }
   }
 
-  return `<svg viewBox="0 0 64 64" class="human-svg" aria-hidden="true">
+  return `<svg viewBox="0 0 80 80" class="human-svg" aria-hidden="true">
     <defs>
       <radialGradient id="${gid}h" cx="35%" cy="28%" r="70%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
-        <stop offset="45%" stop-color="${b.head}"/>
-        <stop offset="100%" stop-color="${b.stroke}" stop-opacity="0.85"/>
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.92"/>
+        <stop offset="42%" stop-color="${b.head}"/>
+        <stop offset="100%" stop-color="${b.stroke}" stop-opacity="0.88"/>
       </radialGradient>
       <radialGradient id="${gid}b" cx="35%" cy="25%" r="75%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.5"/>
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
         <stop offset="50%" stop-color="${b.suit}"/>
         <stop offset="100%" stop-color="${b.stroke}" stop-opacity="0.95"/>
       </radialGradient>
     </defs>
     ${back}
-    <path d="M15 58 C15 41 22 35 32 35 C42 35 49 41 49 58 Z" fill="url(#${gid}b)" stroke="${b.stroke}" stroke-width="1.5"/>
-    <circle cx="32" cy="21" r="13" fill="url(#${gid}h)" stroke="${b.stroke}" stroke-width="1.5"/>
-    <ellipse cx="27" cy="14.5" rx="4" ry="2" fill="#ffffff" opacity="0.5" transform="rotate(-20 27 14.5)"/>
+    <path d="M18 74 C18 51 27 44 40 44 C53 44 62 51 62 74 Z" fill="url(#${gid}b)" stroke="${b.stroke}" stroke-width="1.8"/>
+    ${collar}
+    <ellipse cx="40" cy="44" rx="10" ry="3.5" fill="rgba(0,0,0,0.14)"/>
+    <circle cx="40" cy="27" r="16.5" fill="url(#${gid}h)" stroke="${b.stroke}" stroke-width="1.8"/>
+    <ellipse cx="33.5" cy="18.5" rx="5" ry="2.4" fill="#ffffff" opacity="0.52" transform="rotate(-22 33.5 18.5)"/>
     ${headTop}
     ${faceExtra}
-    <circle cx="27" cy="20" r="2.2" fill="#0f172a"/><circle cx="26.3" cy="19.3" r="0.8" fill="#fff"/>
-    <circle cx="37" cy="20" r="2.2" fill="#0f172a"/><circle cx="36.3" cy="19.3" r="0.8" fill="#fff"/>
-    <circle cx="23" cy="23.5" r="2" fill="#fda4af" opacity="0.55"/><circle cx="41" cy="23.5" r="2" fill="#fda4af" opacity="0.55"/>
-    ${b.cat==='genius' ? `<text x="32" y="51" text-anchor="middle" font-size="8.5" font-weight="900" fill="#ffffff">${b.badge}</text>` : ''}
+    <circle cx="33.5" cy="26.5" r="3" fill="#0f172a"/><circle cx="32.5" cy="25.5" r="1.1" fill="#fff"/><circle cx="34.5" cy="27.5" r="0.5" fill="#fff"/>
+    <circle cx="46.5" cy="26.5" r="3" fill="#0f172a"/><circle cx="45.5" cy="25.5" r="1.1" fill="#fff"/><circle cx="47.5" cy="27.5" r="0.5" fill="#fff"/>
+    <circle cx="28.5" cy="30.5" r="2.6" fill="#fda4af" opacity="0.55"/><circle cx="51.5" cy="30.5" r="2.6" fill="#fda4af" opacity="0.55"/>
+    ${b.cat==='genius' ? `<text x="40" y="68" text-anchor="middle" font-size="9.5" font-weight="900" fill="#ffffff">${b.badge}</text>` : ''}
   </svg>`;
 }
 
@@ -1559,8 +1578,8 @@ function enterWithPin() {
 function buildJoinView() {
   const animals = BODIES.filter(b => b.cat === 'animal');
   const geniuses = BODIES.filter(b => b.cat === 'genius');
-  ge('animal-grid').innerHTML = animals.map((b,i) => `<span class="out-opt ${i===0?'sel':''}" data-bid="${b.id}" onclick="pickBody(this,'${b.id}')">${b.icon} ${b.label}</span>`).join('');
-  ge('genius-grid').innerHTML = geniuses.map(b => `<span class="out-opt" data-bid="${b.id}" onclick="pickBody(this,'${b.id}')">${b.icon} ${b.label}</span>`).join('');
+  ge('animal-grid').innerHTML = animals.map((b,i) => `<div class="char-tile ${i===0?'sel':''}" data-bid="${b.id}" onclick="pickBody(this,'${b.id}')">${renderBodySvg(b.id)}<span>${b.label}</span></div>`).join('');
+  ge('genius-grid').innerHTML = geniuses.map(b => `<div class="char-tile" data-bid="${b.id}" onclick="pickBody(this,'${b.id}')">${renderBodySvg(b.id)}<span>${b.label}</span></div>`).join('');
   ge('frame-grid').innerHTML = FRAMES.map((f,i) => `<span class="out-opt ${i===0?'sel':''}" onclick="pickFrame(this,'${f.id}')">${f.label}</span>`).join('');
   ge('col-grid').innerHTML = COLORS.map((c,i) => `<div class="col-opt ${i===0?'sel':''}" style="background:${c}" onclick="pickCol(this,'${c}')"></div>`).join('');
   myBody = animals[0].id; myFrame = FRAMES[0].id; myColor = COLORS[0];
@@ -1577,7 +1596,7 @@ function updatePreview() {
   ge('char-preview').style.borderColor = myColor;
 }
 function pickBody(el,b){
-  document.querySelectorAll('#animal-grid .out-opt,#genius-grid .out-opt').forEach(e=>e.classList.remove('sel'));
+  document.querySelectorAll('#animal-grid .char-tile,#genius-grid .char-tile').forEach(e=>e.classList.remove('sel'));
   el.classList.add('sel'); myBody=b; updatePreview();
 }
 function pickFrame(el,f){ el.parentElement.querySelectorAll('.out-opt').forEach(e=>e.classList.remove('sel')); el.classList.add('sel'); myFrame=f; updatePreview(); }
