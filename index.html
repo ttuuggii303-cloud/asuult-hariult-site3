@@ -364,6 +364,11 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
     <button class="btn btn-yellow" id="tg-next-btn" onclick="nextQuestion()">Дараагийн →</button>
   </div>
 
+  <div id="tg-all-done" onclick="nextQuestion()" style="display:none;width:100%;max-width:860px;background:var(--k-green);color:#fff;padding:14px 20px;border-radius:14px;margin-bottom:14px;cursor:pointer;box-shadow:var(--shadow);align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:4px solid rgba(0,0,0,.25)">
+    <div style="font-weight:900;font-size:1.05rem" id="tg-all-done-msg">🎉 Бүх суралцагчид хариулж дууслаа!</div>
+    <span class="btn btn-yellow btn-sm" id="tg-all-done-btn">Дараагийн асуулт →</span>
+  </div>
+
   <div class="card wide" style="max-width:860px">
     <h2 class="center" id="tg-qtext" style="margin-bottom:8px">...</h2>
     <div class="k-grid" id="tg-options"></div>
@@ -1261,8 +1266,12 @@ function startGame() {
   launchQuestion();
 }
 
+let allDoneNotified = false;
+
 function launchQuestion() {
   qAnswers = {};
+  allDoneNotified = false;
+  ge('tg-all-done').style.display = 'none';
   const q = activeSet.questions[qIdx];
   const total = activeSet.count;
   broadcast({ type: 'countdown', qIndex: qIdx, total });
@@ -1296,6 +1305,16 @@ function renderTeacherGame() {
   ge('tg-ncorrect').textContent = cor;
   ge('tg-nwrong').textContent = wr;
   ge('tg-nnone').textContent = Math.max(0, stArr.length - nAns);
+
+  if (stArr.length > 0 && nAns >= stArr.length && !allDoneNotified) {
+    allDoneNotified = true;
+    clearInterval(timerIv);
+    const isLast = qIdx + 1 >= total;
+    ge('tg-all-done-msg').textContent = `🎉 Бүгд (${nAns}/${stArr.length}) хариулж дууслаа!`;
+    ge('tg-all-done-btn').textContent = isLast ? '🏁 Эцсийн дүн харах →' : 'Дараагийн асуулт →';
+    ge('tg-all-done').style.display = 'flex';
+    toast('🔔 Бүх суралцагч хариулж дууслаа!', '#26890c');
+  }
 
   const ranked = [...stArr].sort((a,b) => b.score - a.score).slice(0,5);
   const maxPts = Math.max(60, total * 60);
