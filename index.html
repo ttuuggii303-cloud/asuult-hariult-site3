@@ -327,31 +327,37 @@ input[type=radio]{width:auto;min-width:0;margin:0;accent-color:var(--k-purple);t
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     AUTH — Багш / Сурагч тусдаа нэвтрэх (Нууц үггүй)
+     AUTH — Нэвтрэх / Бүртгүүлэх (Багш, Сурагч тусдаа, нууц үггүй)
 ══════════════════════════════════════════════════ -->
 <div id="v-auth" class="view active" style="justify-content:center">
-  <div class="card" style="max-width:420px">
+  <div class="card" style="max-width:430px">
     <div style="font-size:3rem;text-align:center;margin-bottom:4px">📱</div>
     <h2 class="center">Тавтай морил!</h2>
-    <p class="muted center" style="font-size:.88rem;margin-bottom:14px">Багш эсвэл сурагчаар утасны дугаараа оруулж нэвтэрнэ үү</p>
+    <p class="muted center" style="font-size:.86rem;margin-bottom:14px">Багш эсвэл сурагчаар бүртгүүлээд нэвтэрнэ үү</p>
     <div class="tabs">
-      <div class="tab active" id="tab-teacher" onclick="switchAuthTab('teacher')">👩‍🏫 Багш</div>
-      <div class="tab" id="tab-student" onclick="switchAuthTab('student')">🎓 Сурагч</div>
+      <div class="tab active" id="tab-login" onclick="switchAuthMode('login')">Нэвтрэх</div>
+      <div class="tab" id="tab-reg" onclick="switchAuthMode('reg')">Бүртгүүлэх</div>
     </div>
-    <div id="auth-teacher">
-      <label>Багшийн нэр</label>
-      <input id="t-name" placeholder="Дорж багш" maxlength="30">
+
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn btn-sm btn-primary" style="flex:1" id="role-teacher-btn" onclick="setAuthRole('teacher')">👩‍🏫 Багш</button>
+      <button class="btn btn-sm" style="flex:1" id="role-student-btn" onclick="setAuthRole('student')">🎓 Сурагч</button>
+    </div>
+
+    <div id="auth-login">
       <label>Утасны дугаар (8 оронтой)</label>
-      <input id="t-phone" placeholder="99112233" maxlength="8" inputmode="numeric" onkeydown="if(event.key==='Enter')doRoleLogin('teacher')">
-      <button class="btn btn-primary btn-full btn-lg" onclick="doRoleLogin('teacher')">👩‍🏫 Багшаар нэвтрэх →</button>
+      <input id="l-phone" placeholder="99112233" maxlength="8" inputmode="numeric" onkeydown="if(event.key==='Enter')doAuthLogin()">
+      <button class="btn btn-primary btn-full btn-lg" id="login-submit-btn" onclick="doAuthLogin()">👩‍🏫 Багшаар нэвтрэх →</button>
     </div>
-    <div id="auth-student" style="display:none">
-      <label>Сурагчийн нэр</label>
-      <input id="st-name" placeholder="Бат" maxlength="20">
+
+    <div id="auth-reg" style="display:none">
+      <label id="reg-name-lbl">Багшийн нэр</label>
+      <input id="r-name" placeholder="Дорж багш" maxlength="30">
       <label>Утасны дугаар (8 оронтой)</label>
-      <input id="st-phone" placeholder="88112233" maxlength="8" inputmode="numeric" onkeydown="if(event.key==='Enter')doRoleLogin('student')">
-      <button class="btn btn-green btn-full btn-lg" onclick="doRoleLogin('student')">🎓 Сурагчаар нэвтрэх →</button>
+      <input id="r-phone" placeholder="99112233" maxlength="8" inputmode="numeric" onkeydown="if(event.key==='Enter')doAuthRegister()">
+      <button class="btn btn-green btn-full btn-lg" id="reg-submit-btn" onclick="doAuthRegister()">📝 Бүртгүүлэх →</button>
     </div>
+
     <p id="auth-err" style="color:var(--k-red);text-align:center;display:none;margin-top:8px;font-weight:700"></p>
   </div>
 </div>
@@ -762,20 +768,36 @@ function loadUsers() {
 }
 function saveUsers(u) { localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
 
-function openAuth(tab='teacher') {
-  switchAuthTab(tab);
+let authMode = 'login';
+let authRole = 'teacher';
+
+function openAuth(role='teacher', mode='login') {
+  setAuthRole(role);
+  switchAuthMode(mode);
   showView('v-auth');
 }
-function switchAuthTab(t) {
-  ['teacher','student'].forEach(x => {
-    ge('auth-'+x).style.display = x===t ? '' : 'none';
-    ge('tab-'+x).classList.toggle('active', x===t);
+function switchAuthMode(m) {
+  authMode = m;
+  ['login','reg'].forEach(x => {
+    ge('auth-'+x).style.display = x===m ? '' : 'none';
+    ge('tab-'+x).classList.toggle('active', x===m);
   });
+  ge('auth-err').style.display = 'none';
+}
+function setAuthRole(r) {
+  authRole = r;
+  ge('role-teacher-btn').className = r==='teacher' ? 'btn btn-sm btn-primary' : 'btn btn-sm';
+  ge('role-student-btn').className = r==='student' ? 'btn btn-sm btn-green' : 'btn btn-sm';
+  ge('reg-name-lbl').textContent = r==='teacher' ? 'Багшийн нэр' : 'Сурагчийн нэр';
+  ge('r-name').placeholder = r==='teacher' ? 'Дорж багш' : 'Бат';
+  ge('login-submit-btn').textContent = r==='teacher' ? '👩‍🏫 Багшаар нэвтрэх →' : '🎓 Сурагчаар нэвтрэх →';
+  ge('login-submit-btn').className = r==='teacher' ? 'btn btn-primary btn-full btn-lg' : 'btn btn-green btn-full btn-lg';
+  ge('reg-submit-btn').textContent = r==='teacher' ? '👩‍🏫 Багшаар бүртгүүлэх →' : '🎓 Сурагчаар бүртгүүлэх →';
   ge('auth-err').style.display = 'none';
 }
 function openTeacherPortal() {
   if (currentAccount && currentAccount.role === 'teacher') openSets();
-  else openAuth('teacher');
+  else openAuth('teacher', 'login');
 }
 function updateAuthUI() {
   ge('nav-user-pill').style.display = currentAccount ? '' : 'none';
@@ -802,25 +824,50 @@ function afterAuthSuccess() {
     showView('v-home');
   }
 }
-function doRoleLogin(role) {
-  const name = v(role === 'teacher' ? 't-name' : 'st-name');
-  const phone = v(role === 'teacher' ? 't-phone' : 'st-phone').replace(/\D/g,'');
+function doAuthRegister() {
+  const name = v('r-name');
+  const phone = v('r-phone').replace(/\D/g,'');
   const err = ge('auth-err');
   if (!name) { err.textContent = 'Нэрээ бичнэ үү'; err.style.display='block'; return; }
   if (!/^\d{8}$/.test(phone)) { err.textContent = '8 оронтой утасны дугаар оруулна уу'; err.style.display='block'; return; }
   const users = loadUsers();
-  if (users[phone] && users[phone].role && users[phone].role !== role) {
-    err.textContent = users[phone].role === 'teacher'
+  if (users[phone]) {
+    err.textContent = users[phone].role !== authRole
+      ? (users[phone].role === 'teacher'
+        ? '⚠️ Энэ дугаар Багшаар бүртгэлтэй тул Сурагчаар бүртгүүлэх боломжгүй!'
+        : '⚠️ Энэ дугаар Сурагчаар бүртгэлтэй тул Багшаар бүртгүүлэх боломжгүй!')
+      : '⚠️ Энэ дугаар аль хэдийн бүртгэлтэй байна. «Нэвтрэх» цэсээр орно уу!';
+    err.style.display = 'block';
+    return;
+  }
+  users[phone] = { name, phone, role: authRole };
+  saveUsers(users);
+  currentAccount = { name, phone, role: authRole };
+  localStorage.setItem(SESS_KEY, JSON.stringify(currentAccount));
+  toast(`Амжилттай бүртгэгдлээ, ${name}! 🎉`);
+  afterAuthSuccess();
+}
+function doAuthLogin() {
+  const phone = v('l-phone').replace(/\D/g,'');
+  const err = ge('auth-err');
+  if (!/^\d{8}$/.test(phone)) { err.textContent = '8 оронтой утасны дугаар оруулна уу'; err.style.display='block'; return; }
+  const users = loadUsers();
+  const u = users[phone];
+  if (!u) {
+    err.textContent = 'Энэ дугаар бүртгэлгүй байна. «Бүртгүүлэх» цэсээр эхлээд бүртгүүлнэ үү!';
+    err.style.display = 'block';
+    return;
+  }
+  if (u.role && u.role !== authRole) {
+    err.textContent = u.role === 'teacher'
       ? '⚠️ Энэ дугаар Багшаар бүртгэлтэй тул Сурагчаар нэвтрэх боломжгүй!'
       : '⚠️ Энэ дугаар Сурагчаар бүртгэлтэй тул Багшаар нэвтрэх боломжгүй!';
     err.style.display = 'block';
     return;
   }
-  users[phone] = { name, phone, role };
-  saveUsers(users);
-  currentAccount = { name, phone, role };
+  currentAccount = { name: u.name, phone: u.phone, role: u.role || authRole };
   localStorage.setItem(SESS_KEY, JSON.stringify(currentAccount));
-  toast(`Тавтай морил, ${name}! 👋`);
+  toast(`Тавтай морил, ${u.name}! 👋`);
   afterAuthSuccess();
 }
 function doLogout() {
@@ -828,7 +875,7 @@ function doLogout() {
   currentAccount = null;
   localStorage.removeItem(SESS_KEY);
   updateAuthUI();
-  openAuth('teacher');
+  openAuth('teacher', 'login');
   toast('Системээс гарлаа');
 }
 
